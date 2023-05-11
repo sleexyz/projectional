@@ -8,6 +8,9 @@
 			"script": "watch",
 			"problemMatcher": "$ts-webpack-watch",
 			"isBackground": true,
+			"options": {
+				"cwd": "${workspaceFolder}/projectional"
+			},
 			"presentation": {
 				"reveal": "never",
 				"group": "watchers"
@@ -22,6 +25,9 @@
 			"script": "watch-tests",
 			"problemMatcher": "$tsc-watch",
 			"isBackground": true,
+			"options": {
+				"cwd": "${workspaceFolder}/projectional"
+			},
 			"presentation": {
 				"reveal": "never",
 				"group": "watchers"
