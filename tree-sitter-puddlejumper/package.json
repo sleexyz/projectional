@@ -4,7 +4,9 @@
   "description": "",
   "main": "bindings/node",
   "scripts": {
-    "test": "tree-sitter test"
+    "test": "tree-sitter test",
+    "build": "tree-sitter generate",
+    "test-dev": "git ls-files | entr -c -s 'npm run build && npm run test'"
   },
   "author": "",
   "license": "ISC",

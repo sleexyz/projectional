@@ -1,9 +1,10 @@
 ==================
 Basic module
 ==================
-
 hello
-
+world asdf
 ---
 
-(source_file)
+(document
+    (block)
+    (block))

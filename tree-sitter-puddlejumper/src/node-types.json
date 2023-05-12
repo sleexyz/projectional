@@ -1,11 +1,25 @@
 [
   {
-    "type": "source_file",
+    "type": "document",
     "named": true,
-    "fields": {}
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "block",
+          "named": true
+        }
+      ]
+    }
   },
   {
-    "type": "hello",
+    "type": "\n",
     "named": false
+  },
+  {
+    "type": "block",
+    "named": true
   }
 ]

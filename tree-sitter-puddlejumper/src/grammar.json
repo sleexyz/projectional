@@ -1,9 +1,33 @@
 {
   "name": "puddlejumper",
   "rules": {
-    "source_file": {
-      "type": "STRING",
-      "value": "hello"
+    "document": {
+      "type": "REPEAT",
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "block"
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "STRING",
+                "value": "\n"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "block": {
+      "type": "PATTERN",
+      "value": "[^\\n]+"
     }
   },
   "extras": [

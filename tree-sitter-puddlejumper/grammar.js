@@ -1,7 +1,7 @@
 module.exports = grammar({
   name: "puddlejumper",
   rules: {
-    // TODO: add the actual grammar rules
-    source_file: ($) => "hello",
-  },
+    document: $ => repeat(seq($.block, optional("\n"))),
+    block: $ => /[^\n]+/,
+  }
 });
