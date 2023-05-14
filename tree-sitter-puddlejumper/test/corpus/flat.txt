@@ -1,10 +1,10 @@
 ==================
-Basic module
+Flat document
 ==================
 hello
 world asdf
 ---
 
 (document
-    (block)
-    (block))
+    (node (content))
+    (node (content)))

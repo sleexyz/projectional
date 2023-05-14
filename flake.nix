@@ -13,6 +13,9 @@
             nativeBuildInputs = with pkgs; [
               nodejs-18_x
               entr
+              llvmPackages_14.clang
+              tree-sitter
+              graphviz
             ];
           };
         }

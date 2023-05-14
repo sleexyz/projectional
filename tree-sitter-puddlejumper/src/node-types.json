@@ -5,21 +5,36 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": false,
+      "required": true,
       "types": [
         {
-          "type": "block",
+          "type": "node",
           "named": true
         }
       ]
     }
   },
   {
-    "type": "\n",
-    "named": false
+    "type": "node",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "content",
+          "named": true
+        },
+        {
+          "type": "node",
+          "named": true
+        }
+      ]
+    }
   },
   {
-    "type": "block",
+    "type": "content",
     "named": true
   }
 ]

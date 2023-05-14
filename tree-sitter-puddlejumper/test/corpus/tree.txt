@@ -1,0 +1,16 @@
+==================
+Nested document
+==================
+hello
+    world
+    foo
+bar
+    baz
+---
+
+(document 
+    (node (content) 
+        (node (content))
+        (node (content)))
+    (node (content) 
+        (node (content))))
