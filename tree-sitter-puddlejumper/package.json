@@ -8,6 +8,11 @@
     "build": "tree-sitter generate",
     "test-dev": "git ls-files | entr -c -s 'npm run build && npm run test'"
   },
+  "treeSitter": {
+    "file-types": [
+      "pj"
+    ]
+  },
   "author": "",
   "license": "ISC",
   "dependencies": {

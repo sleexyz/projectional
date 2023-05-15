@@ -3,16 +3,16 @@ module.exports = grammar({
   externals: $ => [
     $._indent,
     $._dedent,
-    $._newline,
+    $.newline,
   ],
   rules: {
     document: $ => $._block,
-    _block: $ => repeat1(seq($.node, optional($._newline))),
+    _block: $ => repeat1(seq($.node, optional($.newline))),
     node: $ => seq(
       $.content,
-      optional($._children),
+      optional($.children),
     ),
-    _children: $ => seq(
+    children: $ => seq(
       $._indent,
       $._block,
       $._dedent,

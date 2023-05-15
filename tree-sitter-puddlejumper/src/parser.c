@@ -20,11 +20,11 @@ enum {
   sym_content = 1,
   sym__indent = 2,
   sym__dedent = 3,
-  sym__newline = 4,
+  sym_newline = 4,
   sym_document = 5,
   aux_sym__block = 6,
   sym_node = 7,
-  sym__children = 8,
+  sym_children = 8,
 };
 
 static const char * const ts_symbol_names[] = {
@@ -32,11 +32,11 @@ static const char * const ts_symbol_names[] = {
   [sym_content] = "content",
   [sym__indent] = "_indent",
   [sym__dedent] = "_dedent",
-  [sym__newline] = "_newline",
+  [sym_newline] = "newline",
   [sym_document] = "document",
   [aux_sym__block] = "_block",
   [sym_node] = "node",
-  [sym__children] = "_children",
+  [sym_children] = "children",
 };
 
 static const TSSymbol ts_symbol_map[] = {
@@ -44,11 +44,11 @@ static const TSSymbol ts_symbol_map[] = {
   [sym_content] = sym_content,
   [sym__indent] = sym__indent,
   [sym__dedent] = sym__dedent,
-  [sym__newline] = sym__newline,
+  [sym_newline] = sym_newline,
   [sym_document] = sym_document,
   [aux_sym__block] = aux_sym__block,
   [sym_node] = sym_node,
-  [sym__children] = sym__children,
+  [sym_children] = sym_children,
 };
 
 static const TSSymbolMetadata ts_symbol_metadata[] = {
@@ -68,8 +68,8 @@ static const TSSymbolMetadata ts_symbol_metadata[] = {
     .visible = false,
     .named = true,
   },
-  [sym__newline] = {
-    .visible = false,
+  [sym_newline] = {
+    .visible = true,
     .named = true,
   },
   [sym_document] = {
@@ -84,8 +84,8 @@ static const TSSymbolMetadata ts_symbol_metadata[] = {
     .visible = true,
     .named = true,
   },
-  [sym__children] = {
-    .visible = false,
+  [sym_children] = {
+    .visible = true,
     .named = true,
   },
 };
@@ -180,34 +180,34 @@ static const TSLexMode ts_lex_modes[STATE_COUNT] = {
 enum {
   ts_external_token__indent = 0,
   ts_external_token__dedent = 1,
-  ts_external_token__newline = 2,
+  ts_external_token_newline = 2,
 };
 
 static const TSSymbol ts_external_scanner_symbol_map[EXTERNAL_TOKEN_COUNT] = {
   [ts_external_token__indent] = sym__indent,
   [ts_external_token__dedent] = sym__dedent,
-  [ts_external_token__newline] = sym__newline,
+  [ts_external_token_newline] = sym_newline,
 };
 
 static const bool ts_external_scanner_states[6][EXTERNAL_TOKEN_COUNT] = {
   [1] = {
     [ts_external_token__indent] = true,
     [ts_external_token__dedent] = true,
-    [ts_external_token__newline] = true,
+    [ts_external_token_newline] = true,
   },
   [2] = {
     [ts_external_token__indent] = true,
-    [ts_external_token__newline] = true,
+    [ts_external_token_newline] = true,
   },
   [3] = {
     [ts_external_token__dedent] = true,
   },
   [4] = {
-    [ts_external_token__newline] = true,
+    [ts_external_token_newline] = true,
   },
   [5] = {
     [ts_external_token__dedent] = true,
-    [ts_external_token__newline] = true,
+    [ts_external_token_newline] = true,
   },
 };
 
@@ -217,7 +217,7 @@ static const uint16_t ts_parse_table[LARGE_STATE_COUNT][SYMBOL_COUNT] = {
     [sym_content] = ACTIONS(1),
     [sym__indent] = ACTIONS(1),
     [sym__dedent] = ACTIONS(1),
-    [sym__newline] = ACTIONS(1),
+    [sym_newline] = ACTIONS(1),
   },
   [1] = {
     [sym_document] = STATE(19),
@@ -226,18 +226,18 @@ static const uint16_t ts_parse_table[LARGE_STATE_COUNT][SYMBOL_COUNT] = {
     [sym_content] = ACTIONS(3),
   },
   [2] = {
-    [sym__children] = STATE(11),
+    [sym_children] = STATE(11),
     [ts_builtin_sym_end] = ACTIONS(5),
     [sym_content] = ACTIONS(5),
     [sym__indent] = ACTIONS(7),
-    [sym__newline] = ACTIONS(5),
+    [sym_newline] = ACTIONS(5),
   },
   [3] = {
-    [sym__children] = STATE(14),
+    [sym_children] = STATE(14),
     [sym_content] = ACTIONS(5),
     [sym__indent] = ACTIONS(9),
     [sym__dedent] = ACTIONS(5),
-    [sym__newline] = ACTIONS(5),
+    [sym_newline] = ACTIONS(5),
   },
 };
 
@@ -289,7 +289,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_node,
   [65] = 2,
     ACTIONS(29), 1,
-      sym__newline,
+      sym_newline,
     ACTIONS(27), 2,
       ts_builtin_sym_end,
       sym_content,
@@ -302,29 +302,29 @@ static const uint16_t ts_small_parse_table[] = {
       sym_node,
   [83] = 1,
     ACTIONS(31), 3,
-      sym__newline,
+      sym_newline,
       ts_builtin_sym_end,
       sym_content,
   [89] = 1,
     ACTIONS(33), 3,
-      sym__newline,
+      sym_newline,
       ts_builtin_sym_end,
       sym_content,
   [95] = 2,
     ACTIONS(35), 1,
-      sym__newline,
+      sym_newline,
     ACTIONS(27), 2,
       sym__dedent,
       sym_content,
   [103] = 1,
     ACTIONS(31), 3,
       sym__dedent,
-      sym__newline,
+      sym_newline,
       sym_content,
   [109] = 1,
     ACTIONS(33), 3,
       sym__dedent,
-      sym__newline,
+      sym_newline,
       sym_content,
   [115] = 3,
     ACTIONS(18), 1,
@@ -382,7 +382,7 @@ static const TSParseActionEntry ts_parse_actions[] = {
   [27] = {.entry = {.count = 1, .reusable = true}}, REDUCE(aux_sym__block, 1),
   [29] = {.entry = {.count = 1, .reusable = true}}, SHIFT(17),
   [31] = {.entry = {.count = 1, .reusable = true}}, REDUCE(sym_node, 2),
-  [33] = {.entry = {.count = 1, .reusable = true}}, REDUCE(sym__children, 3),
+  [33] = {.entry = {.count = 1, .reusable = true}}, REDUCE(sym_children, 3),
   [35] = {.entry = {.count = 1, .reusable = true}}, SHIFT(18),
   [37] = {.entry = {.count = 1, .reusable = true}},  ACCEPT_INPUT(),
 };

@@ -1,5 +1,24 @@
 [
   {
+    "type": "children",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "newline",
+          "named": true
+        },
+        {
+          "type": "node",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "document",
     "named": true,
     "fields": {},
@@ -7,6 +26,10 @@
       "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "newline",
+          "named": true
+        },
         {
           "type": "node",
           "named": true
@@ -23,11 +46,11 @@
       "required": true,
       "types": [
         {
-          "type": "content",
+          "type": "children",
           "named": true
         },
         {
-          "type": "node",
+          "type": "content",
           "named": true
         }
       ]
@@ -35,6 +58,10 @@
   },
   {
     "type": "content",
+    "named": true
+  },
+  {
+    "type": "newline",
     "named": true
   }
 ]

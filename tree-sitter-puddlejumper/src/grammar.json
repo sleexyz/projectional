@@ -19,7 +19,7 @@
             "members": [
               {
                 "type": "SYMBOL",
-                "name": "_newline"
+                "name": "newline"
               },
               {
                 "type": "BLANK"
@@ -41,7 +41,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "_children"
+              "name": "children"
             },
             {
               "type": "BLANK"
@@ -50,7 +50,7 @@
         }
       ]
     },
-    "_children": {
+    "children": {
       "type": "SEQ",
       "members": [
         {
@@ -91,7 +91,7 @@
     },
     {
       "type": "SYMBOL",
-      "name": "_newline"
+      "name": "newline"
     }
   ],
   "inline": [],

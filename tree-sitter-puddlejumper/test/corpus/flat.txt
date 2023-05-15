@@ -2,6 +2,7 @@
 Flat document
 ==================
 hello
+
 world asdf
 ---
 
