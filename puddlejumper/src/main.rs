@@ -2,7 +2,7 @@ mod puddlejumper;
 use std::env;
 use std::fs;
 fn print_usage() {
-    println!("Usage: cargo run -- [pretty_print | print] <file_path>");
+    println!("Usage: cargo run -- [pretty_print | print | debug_print] <file_path>");
 }
 
 fn main() {
@@ -15,11 +15,13 @@ fn main() {
     let mut file_path = "";
     let mut pretty_print = false;
     let mut lossless_print = false;
+    let mut debug_print = false;
 
     let mut i = 1;
     while i < args.len() {
         match args[i].as_str() {
             "pretty_print" => pretty_print = true,
+            "debug_print" => debug_print = true,
             "print" => lossless_print = true,
             _ => {
                 file_path = &args[i];
@@ -63,7 +65,16 @@ fn main() {
                 return;
             }
         }
+    } else if debug_print {
+        let result = p.debug_print(&mut std::io::stdout());
+        match result {
+            Ok(_) => (),
+            Err(error) => {
+                println!("Error debug printing file: {}", error);
+                return;
+            }
+        }
     } else {
-        println!("Usage: cargo run -- <file_path> [--pretty_print | --lossless_print]");
+        print_usage()
     }
 }
