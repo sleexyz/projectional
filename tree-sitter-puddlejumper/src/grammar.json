@@ -3,40 +3,51 @@
   "word": "identifier",
   "rules": {
     "document": {
-      "type": "SYMBOL",
-      "name": "_block"
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_stanza"
+        },
+        {
+          "type": "BLANK"
+        }
+      ]
     },
-    "_block": {
-      "type": "REPEAT1",
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "SYMBOL",
-            "name": "node"
-          },
-          {
-            "type": "CHOICE",
-            "members": [
-              {
+    "_stanza": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "REPEAT1",
+              "content": {
                 "type": "SYMBOL",
-                "name": "newline"
-              },
-              {
-                "type": "BLANK"
+                "name": "node"
               }
-            ]
+            },
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "SYMBOL",
+                "name": "block_node"
+              }
+            }
+          ]
+        },
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "SYMBOL",
+            "name": "block_node"
           }
-        ]
-      }
+        }
+      ]
     },
-    "identifier": {
-      "type": "PATTERN",
-      "value": "[a-zA-Z0-9_]+"
-    },
-    "node": {
+    "block_node": {
       "type": "PREC",
-      "value": 2,
+      "value": 1,
       "content": {
         "type": "CHOICE",
         "members": [
@@ -49,66 +60,34 @@
               },
               {
                 "type": "SYMBOL",
-                "name": "children"
-              }
-            ]
-          },
-          {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "CHOICE",
-                "members": [
-                  {
-                    "type": "SEQ",
-                    "members": [
-                      {
-                        "type": "SYMBOL",
-                        "name": "binding"
-                      },
-                      {
-                        "type": "SYMBOL",
-                        "name": "newline"
-                      }
-                    ]
-                  },
-                  {
-                    "type": "BLANK"
-                  }
-                ]
+                "name": "newline"
               },
               {
                 "type": "SYMBOL",
-                "name": "_bindable"
-              }
-            ]
-          },
-          {
-            "type": "SYMBOL",
-            "name": "ref"
-          }
-        ]
-      }
-    },
-    "_bindable": {
-      "type": "PREC",
-      "value": 1,
-      "content": {
-        "type": "CHOICE",
-        "members": [
-          {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "SYMBOL",
                 "name": "content"
+              },
+              {
+                "type": "REPEAT",
+                "content": {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "newline"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "node"
+                    }
+                  ]
+                }
               },
               {
                 "type": "CHOICE",
                 "members": [
                   {
                     "type": "SYMBOL",
-                    "name": "children"
+                    "name": "newline"
                   },
                   {
                     "type": "BLANK"
@@ -118,11 +97,70 @@
             ]
           },
           {
-            "type": "SYMBOL",
-            "name": "ref"
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "binding"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "newline"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "content"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "children"
+              }
+            ]
           }
         ]
       }
+    },
+    "node": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "content"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "children"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
+    },
+    "children": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "indent"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_stanza"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "dedent"
+        }
+      ]
+    },
+    "identifier": {
+      "type": "PATTERN",
+      "value": "[a-zA-Z0-9_]+"
     },
     "binding": {
       "type": "SEQ",
@@ -132,8 +170,16 @@
           "value": "@"
         },
         {
-          "type": "SYMBOL",
-          "name": "identifier"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "identifier"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         },
         {
           "type": "STRING",
@@ -151,23 +197,6 @@
         {
           "type": "SYMBOL",
           "name": "identifier"
-        }
-      ]
-    },
-    "children": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "indent"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_block"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "dedent"
         }
       ]
     },

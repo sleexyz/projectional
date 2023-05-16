@@ -5,7 +5,7 @@
     "fields": {},
     "children": {
       "multiple": false,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "identifier",
@@ -15,53 +15,7 @@
     }
   },
   {
-    "type": "children",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "dedent",
-          "named": true
-        },
-        {
-          "type": "indent",
-          "named": true
-        },
-        {
-          "type": "newline",
-          "named": true
-        },
-        {
-          "type": "node",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "document",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "newline",
-          "named": true
-        },
-        {
-          "type": "node",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "node",
+    "type": "block_node",
     "named": true,
     "fields": {},
     "children": {
@@ -85,22 +39,72 @@
           "named": true
         },
         {
-          "type": "ref",
+          "type": "node",
           "named": true
         }
       ]
     }
   },
   {
-    "type": "ref",
+    "type": "children",
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
-          "type": "identifier",
+          "type": "block_node",
+          "named": true
+        },
+        {
+          "type": "dedent",
+          "named": true
+        },
+        {
+          "type": "indent",
+          "named": true
+        },
+        {
+          "type": "node",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "document",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "block_node",
+          "named": true
+        },
+        {
+          "type": "node",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "node",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "children",
+          "named": true
+        },
+        {
+          "type": "content",
           "named": true
         }
       ]

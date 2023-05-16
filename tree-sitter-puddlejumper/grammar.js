@@ -7,25 +7,31 @@ module.exports = grammar({
   ],
   word: $ => $.identifier,
   rules: {
-    document: $ => $._block,
-    _block: $ => repeat1(seq($.node, optional($.newline))),
-    identifier: $ => /[a-zA-Z0-9_]+/,
-    node: $ => prec(2, choice(
-      seq($.binding, $.children),
-      seq(optional(seq($.binding, $.newline)), $._bindable),
-      $.ref,
+    document: $ => optional($._stanza),
+    _stanza: $ => choice(
+      seq(repeat1($.node), repeat($.block_node)),
+      repeat1($.block_node),
+    ),
+    // block_node: $ => prec.left(seq($.binding, $.newline, repeat1(seq($.node, $.newline)))),
+    // block_node: $ => prec.left(seq($.binding, $.newline, $.content, repeat(seq($.newline, $.node)), optional($.newline))),
+
+    // block_node: $ => prec.left(seq($.binding, repeat1(seq($.newline, $.node)), optional($.newline))),
+
+    block_node: $ => prec(1, choice(
+      (seq($.binding, $.newline, $.content, repeat(seq($.newline, $.node)), optional($.newline))),
+      (seq($.binding, $.newline, $.content, $.children)),
     )),
-    _bindable: $ => prec(1, choice(
-      seq($.content, optional($.children)),
-      $.ref,
-    )),
-    binding: $ => seq("@", $.identifier, ":"),
-    ref: $ => seq("@", $.identifier),
+
+    node: $ => seq($.content, optional($.children) ),
     children: $ => seq(
       $.indent,
-      $._block,
+      $._stanza,
       $.dedent,
     ),
+
+    identifier: $ => /[a-zA-Z0-9_]+/,
+    binding: $ => seq("@", optional($.identifier), ":"),
+    ref: $ => seq("@", $.identifier),
     content: $ => /[^@ \n][^\n]*/,
   }
 });

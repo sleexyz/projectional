@@ -1,21 +1,33 @@
 ==================
 Binding
 ==================
-@y:
-hello
 
-@x:
-    test
+@with_children:
+hello
+foo
+
+@anonymous:
+hello
+    foo
+    @foo:
+    bar
+
+
+@without_children:
+hello
 ---
 (document 
-    (node 
-        (binding (identifier))
-        (newline)
-        (content)) (newline)
-    (node 
-        (binding (identifier))
-        (children (indent)
+    (block_node (binding (identifier)) (newline) 
+        (content) (newline)
+        (node (content)) (newline)
+        ) 
+
+    (block_node (binding (identifier)) (newline) 
+        (content) (children (indent) 
             (node (content))
-        (dedent))) 
-    (newline))
-    
+            (block_node (binding (identifier)) (newline) (content))
+             (dedent)))
+
+    (block_node (binding (identifier)) (newline) 
+    (content) (newline))
+    )
