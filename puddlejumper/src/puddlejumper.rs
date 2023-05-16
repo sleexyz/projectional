@@ -72,7 +72,14 @@ fn lossless_print(node: tree_sitter::Node, input: &str, out: &mut dyn std::io::W
     let mut cursor = node.walk();
     loop {
         let n = cursor.node();
-        if n.kind() == "newline" || n.kind() == "indent" || n.kind() == "dedent" || n.kind() == "content" {
+        if n.kind() == "newline"
+            || n.kind() == "indent"
+            || n.kind() == "dedent"
+            || n.kind() == "content"
+            || n.kind() == "content"
+            || n.kind() == "binding"
+            || n.kind() == "ref"
+            {
             write!(out, "{}", &input[n.start_byte()..n.end_byte()])?;
         }
 

@@ -8,11 +8,9 @@ bar
     baz
 ---
 (document
-    (node (content)
-        (children (indent)
-            (node (content)) (newline)
-            (node (content)) (dedent)))
-        (node (content)
-            (children (indent)
-                (node (content)) (dedent)))
-            (newline))
+    (node (content) (children (indent) 
+        (node (content)) (newline)
+        (node (content)) (dedent)))
+    (node (content) (children (indent)
+        (node (content)) (dedent))) 
+    (newline))

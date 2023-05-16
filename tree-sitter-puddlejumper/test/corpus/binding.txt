@@ -1,0 +1,21 @@
+==================
+Binding
+==================
+@y:
+hello
+
+@x:
+    test
+---
+(document 
+    (node 
+        (binding (identifier))
+        (newline)
+        (content)) (newline)
+    (node 
+        (binding (identifier))
+        (children (indent)
+            (node (content))
+        (dedent))) 
+    (newline))
+    

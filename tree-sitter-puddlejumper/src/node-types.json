@@ -1,5 +1,20 @@
 [
   {
+    "type": "binding",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "children",
     "named": true,
     "fields": {},
@@ -54,15 +69,50 @@
       "required": true,
       "types": [
         {
+          "type": "binding",
+          "named": true
+        },
+        {
           "type": "children",
           "named": true
         },
         {
           "type": "content",
           "named": true
+        },
+        {
+          "type": "newline",
+          "named": true
+        },
+        {
+          "type": "ref",
+          "named": true
         }
       ]
     }
+  },
+  {
+    "type": "ref",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": ":",
+    "named": false
+  },
+  {
+    "type": "@",
+    "named": false
   },
   {
     "type": "content",
@@ -70,6 +120,10 @@
   },
   {
     "type": "dedent",
+    "named": true
+  },
+  {
+    "type": "identifier",
     "named": true
   },
   {
