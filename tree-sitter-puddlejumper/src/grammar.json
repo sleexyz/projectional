@@ -55,7 +55,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "_indent"
+          "name": "indent"
         },
         {
           "type": "SYMBOL",
@@ -63,7 +63,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "_dedent"
+          "name": "dedent"
         }
       ]
     },
@@ -83,11 +83,11 @@
   "externals": [
     {
       "type": "SYMBOL",
-      "name": "_indent"
+      "name": "indent"
     },
     {
       "type": "SYMBOL",
-      "name": "_dedent"
+      "name": "dedent"
     },
     {
       "type": "SYMBOL",

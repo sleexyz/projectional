@@ -1,8 +1,8 @@
 module.exports = grammar({
   name: "puddlejumper",
   externals: $ => [
-    $._indent,
-    $._dedent,
+    $.indent,
+    $.dedent,
     $.newline,
   ],
   rules: {
@@ -13,9 +13,9 @@ module.exports = grammar({
       optional($.children),
     ),
     children: $ => seq(
-      $._indent,
+      $.indent,
       $._block,
-      $._dedent,
+      $.dedent,
     ),
     content: $ => /[^\n]+/,
   }

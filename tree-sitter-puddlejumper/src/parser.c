@@ -18,8 +18,8 @@
 
 enum {
   sym_content = 1,
-  sym__indent = 2,
-  sym__dedent = 3,
+  sym_indent = 2,
+  sym_dedent = 3,
   sym_newline = 4,
   sym_document = 5,
   aux_sym__block = 6,
@@ -30,8 +30,8 @@ enum {
 static const char * const ts_symbol_names[] = {
   [ts_builtin_sym_end] = "end",
   [sym_content] = "content",
-  [sym__indent] = "_indent",
-  [sym__dedent] = "_dedent",
+  [sym_indent] = "indent",
+  [sym_dedent] = "dedent",
   [sym_newline] = "newline",
   [sym_document] = "document",
   [aux_sym__block] = "_block",
@@ -42,8 +42,8 @@ static const char * const ts_symbol_names[] = {
 static const TSSymbol ts_symbol_map[] = {
   [ts_builtin_sym_end] = ts_builtin_sym_end,
   [sym_content] = sym_content,
-  [sym__indent] = sym__indent,
-  [sym__dedent] = sym__dedent,
+  [sym_indent] = sym_indent,
+  [sym_dedent] = sym_dedent,
   [sym_newline] = sym_newline,
   [sym_document] = sym_document,
   [aux_sym__block] = aux_sym__block,
@@ -60,12 +60,12 @@ static const TSSymbolMetadata ts_symbol_metadata[] = {
     .visible = true,
     .named = true,
   },
-  [sym__indent] = {
-    .visible = false,
+  [sym_indent] = {
+    .visible = true,
     .named = true,
   },
-  [sym__dedent] = {
-    .visible = false,
+  [sym_dedent] = {
+    .visible = true,
     .named = true,
   },
   [sym_newline] = {
@@ -178,35 +178,35 @@ static const TSLexMode ts_lex_modes[STATE_COUNT] = {
 };
 
 enum {
-  ts_external_token__indent = 0,
-  ts_external_token__dedent = 1,
+  ts_external_token_indent = 0,
+  ts_external_token_dedent = 1,
   ts_external_token_newline = 2,
 };
 
 static const TSSymbol ts_external_scanner_symbol_map[EXTERNAL_TOKEN_COUNT] = {
-  [ts_external_token__indent] = sym__indent,
-  [ts_external_token__dedent] = sym__dedent,
+  [ts_external_token_indent] = sym_indent,
+  [ts_external_token_dedent] = sym_dedent,
   [ts_external_token_newline] = sym_newline,
 };
 
 static const bool ts_external_scanner_states[6][EXTERNAL_TOKEN_COUNT] = {
   [1] = {
-    [ts_external_token__indent] = true,
-    [ts_external_token__dedent] = true,
+    [ts_external_token_indent] = true,
+    [ts_external_token_dedent] = true,
     [ts_external_token_newline] = true,
   },
   [2] = {
-    [ts_external_token__indent] = true,
+    [ts_external_token_indent] = true,
     [ts_external_token_newline] = true,
   },
   [3] = {
-    [ts_external_token__dedent] = true,
+    [ts_external_token_dedent] = true,
   },
   [4] = {
     [ts_external_token_newline] = true,
   },
   [5] = {
-    [ts_external_token__dedent] = true,
+    [ts_external_token_dedent] = true,
     [ts_external_token_newline] = true,
   },
 };
@@ -215,8 +215,8 @@ static const uint16_t ts_parse_table[LARGE_STATE_COUNT][SYMBOL_COUNT] = {
   [0] = {
     [ts_builtin_sym_end] = ACTIONS(1),
     [sym_content] = ACTIONS(1),
-    [sym__indent] = ACTIONS(1),
-    [sym__dedent] = ACTIONS(1),
+    [sym_indent] = ACTIONS(1),
+    [sym_dedent] = ACTIONS(1),
     [sym_newline] = ACTIONS(1),
   },
   [1] = {
@@ -229,14 +229,14 @@ static const uint16_t ts_parse_table[LARGE_STATE_COUNT][SYMBOL_COUNT] = {
     [sym_children] = STATE(11),
     [ts_builtin_sym_end] = ACTIONS(5),
     [sym_content] = ACTIONS(5),
-    [sym__indent] = ACTIONS(7),
+    [sym_indent] = ACTIONS(7),
     [sym_newline] = ACTIONS(5),
   },
   [3] = {
     [sym_children] = STATE(14),
     [sym_content] = ACTIONS(5),
-    [sym__indent] = ACTIONS(9),
-    [sym__dedent] = ACTIONS(5),
+    [sym_indent] = ACTIONS(9),
+    [sym_dedent] = ACTIONS(5),
     [sym_newline] = ACTIONS(5),
   },
 };
@@ -264,14 +264,14 @@ static const uint16_t ts_small_parse_table[] = {
     ACTIONS(18), 1,
       sym_content,
     ACTIONS(20), 1,
-      sym__dedent,
+      sym_dedent,
     STATE(7), 1,
       aux_sym__block,
     STATE(13), 1,
       sym_node,
   [39] = 4,
     ACTIONS(13), 1,
-      sym__dedent,
+      sym_dedent,
     ACTIONS(22), 1,
       sym_content,
     STATE(7), 1,
@@ -282,7 +282,7 @@ static const uint16_t ts_small_parse_table[] = {
     ACTIONS(18), 1,
       sym_content,
     ACTIONS(25), 1,
-      sym__dedent,
+      sym_dedent,
     STATE(7), 1,
       aux_sym__block,
     STATE(13), 1,
@@ -314,16 +314,16 @@ static const uint16_t ts_small_parse_table[] = {
     ACTIONS(35), 1,
       sym_newline,
     ACTIONS(27), 2,
-      sym__dedent,
+      sym_dedent,
       sym_content,
   [103] = 1,
     ACTIONS(31), 3,
-      sym__dedent,
+      sym_dedent,
       sym_newline,
       sym_content,
   [109] = 1,
     ACTIONS(33), 3,
-      sym__dedent,
+      sym_dedent,
       sym_newline,
       sym_content,
   [115] = 3,
@@ -339,7 +339,7 @@ static const uint16_t ts_small_parse_table[] = {
       sym_content,
   [130] = 1,
     ACTIONS(13), 2,
-      sym__dedent,
+      sym_dedent,
       sym_content,
   [135] = 1,
     ACTIONS(37), 1,

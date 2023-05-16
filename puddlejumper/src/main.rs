@@ -1,15 +1,38 @@
+mod puddlejumper;
 use std::env;
 use std::fs;
-use tree_sitter::{self, Tree };
+fn print_usage() {
+    println!("Usage: cargo run -- [pretty_print | print] <file_path>");
+}
 
 fn main() {
     // Retrieve the file path from command-line arguments
     let args: Vec<String> = env::args().collect();
-    if args.len() < 2 {
-        println!("Usage: cargo run -- <file_path>");
+    if args.len() < 3 {
+        print_usage();
         return;
     }
-    let file_path = &args[1];
+    let mut file_path = "";
+    let mut pretty_print = false;
+    let mut lossless_print = false;
+
+    let mut i = 1;
+    while i < args.len() {
+        match args[i].as_str() {
+            "pretty_print" => pretty_print = true,
+            "print" => lossless_print = true,
+            _ => {
+                file_path = &args[i];
+                break;
+            }
+        }
+        i += 1;
+    }
+
+    if file_path == "" {
+        print_usage();
+        return;
+    }
 
     // Read the contents of the file
     let code = match fs::read_to_string(file_path) {
@@ -19,52 +42,28 @@ fn main() {
             return;
         }
     };
-    let mut parser = tree_sitter::Parser::new();
-    parser.set_language(tree_sitter_puddlejumper::language()).expect("Error loading puddlejumper grammar");
-    let tree: Tree = parser.parse(&code, None).unwrap();
-    // println!("{}", tree.root_node().to_sexp());
-    pretty_print(tree.root_node(), &code);
-}
 
-fn pretty_print(node: tree_sitter::Node, input: &str) {
-    let mut indent_level = 0;
-    let mut cursor = node.walk();
-
-    loop {
-        let n = cursor.node();
-
-        // Print node's content
-        if n.kind() == "content" {
-            print_indent(indent_level);
-            println!("{}", &input[n.start_byte()..n.end_byte()]);
-        }
-
-        // Add newline if necessary
-        if n.kind() == "children" {
-            indent_level += 1;
-        }
-
-        // Move to the next node
-        if cursor.goto_first_child() {
-            continue;
-        }
-
-        // No child nodes, move to the next sibling or parent's next sibling
-        while !cursor.goto_next_sibling() {
-            if !cursor.goto_parent() {
+    // Parse and print the code
+    let p = puddlejumper::Parser::new(code);
+    if pretty_print {
+        let result = p.pretty_print(&mut std::io::stdout());
+        match result {
+            Ok(_) => (),
+            Err(error) => {
+                println!("Error pretty printing file: {}", error);
                 return;
             }
-            if cursor.node().kind() == "children" {
-                indent_level -= 1;
+        }
+    } else if lossless_print {
+        let result = p.lossless_print(&mut std::io::stdout());
+        match result {
+            Ok(_) => (),
+            Err(error) => {
+                println!("Error lossless printing file: {}", error);
+                return;
             }
         }
+    } else {
+        println!("Usage: cargo run -- <file_path> [--pretty_print | --lossless_print]");
     }
 }
-
-fn print_indent(_indent_level: usize) {
-    // let indent = "  ";
-    // for _ in 0..indent_level {
-    //     // print!("{}", indent);
-    // }
-}
-

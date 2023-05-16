@@ -8,6 +8,14 @@
       "required": true,
       "types": [
         {
+          "type": "dedent",
+          "named": true
+        },
+        {
+          "type": "indent",
+          "named": true
+        },
+        {
           "type": "newline",
           "named": true
         },
@@ -58,6 +66,14 @@
   },
   {
     "type": "content",
+    "named": true
+  },
+  {
+    "type": "dedent",
+    "named": true
+  },
+  {
+    "type": "indent",
     "named": true
   },
   {
