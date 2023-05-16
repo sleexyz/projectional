@@ -7,10 +7,12 @@ hello
 bar
     baz
 ---
-
-(document 
-    (node (content) 
-        (node (content))
-        (node (content)))
-    (node (content) 
-        (node (content))))
+(document
+    (node (content)
+        (children (indent)
+            (node (content)) (newline)
+            (node (content)) (dedent)))
+        (node (content)
+            (children (indent)
+                (node (content)) (dedent)))
+            (newline))
