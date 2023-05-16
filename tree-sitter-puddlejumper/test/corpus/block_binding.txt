@@ -1,0 +1,24 @@
+==================
+Block binding
+==================
+@a:
+hello
+foo
+
+
+@b:
+hello
+---
+(document 
+    (block_node (binding (identifier)) 
+            (newline) 
+        (node (content)) 
+            (newline)
+        (node (content)) 
+            (mega_newline)
+    ) 
+    (block_node (binding (identifier)) (newline) 
+        (node (content))
+        (mega_newline)
+    ) 
+)

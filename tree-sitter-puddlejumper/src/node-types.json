@@ -27,11 +27,7 @@
           "named": true
         },
         {
-          "type": "children",
-          "named": true
-        },
-        {
-          "type": "content",
+          "type": "mega_newline",
           "named": true
         },
         {
@@ -100,11 +96,19 @@
       "required": true,
       "types": [
         {
+          "type": "binding",
+          "named": true
+        },
+        {
           "type": "children",
           "named": true
         },
         {
           "type": "content",
+          "named": true
+        },
+        {
+          "type": "newline",
           "named": true
         }
       ]
@@ -132,6 +136,10 @@
   },
   {
     "type": "indent",
+    "named": true
+  },
+  {
+    "type": "mega_newline",
     "named": true
   },
   {

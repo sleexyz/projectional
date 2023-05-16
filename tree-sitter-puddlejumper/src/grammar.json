@@ -1,6 +1,5 @@
 {
   "name": "puddlejumper",
-  "word": "identifier",
   "rules": {
     "document": {
       "type": "CHOICE",
@@ -15,131 +14,104 @@
       ]
     },
     "_stanza": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "REPEAT1",
-              "content": {
-                "type": "SYMBOL",
-                "name": "node"
-              }
-            },
-            {
-              "type": "REPEAT",
-              "content": {
-                "type": "SYMBOL",
-                "name": "block_node"
-              }
-            }
-          ]
-        },
-        {
-          "type": "REPEAT1",
-          "content": {
-            "type": "SYMBOL",
-            "name": "block_node"
-          }
-        }
-      ]
-    },
-    "block_node": {
-      "type": "PREC",
-      "value": 1,
+      "type": "REPEAT1",
       "content": {
         "type": "CHOICE",
         "members": [
           {
+            "type": "SYMBOL",
+            "name": "node"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "block_node"
+          }
+        ]
+      }
+    },
+    "block_node": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "binding"
+        },
+        {
+          "type": "REPEAT1",
+          "content": {
             "type": "SEQ",
             "members": [
-              {
-                "type": "SYMBOL",
-                "name": "binding"
-              },
               {
                 "type": "SYMBOL",
                 "name": "newline"
               },
               {
                 "type": "SYMBOL",
-                "name": "content"
+                "name": "node"
+              }
+            ]
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "mega_newline"
+        }
+      ]
+    },
+    "node": {
+      "type": "PREC_LEFT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "binding"
+                  },
+                  {
+                    "type": "PATTERN",
+                    "value": "\\s*"
+                  }
+                ]
               },
               {
-                "type": "REPEAT",
-                "content": {
-                  "type": "SEQ",
-                  "members": [
-                    {
-                      "type": "SYMBOL",
-                      "name": "newline"
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "node"
-                    }
-                  ]
-                }
-              },
+                "type": "BLANK"
+              }
+            ]
+          },
+          {
+            "type": "SYMBOL",
+            "name": "content"
+          },
+          {
+            "type": "CHOICE",
+            "members": [
               {
                 "type": "CHOICE",
                 "members": [
                   {
                     "type": "SYMBOL",
-                    "name": "newline"
+                    "name": "children"
                   },
                   {
-                    "type": "BLANK"
+                    "type": "SYMBOL",
+                    "name": "newline"
                   }
                 ]
-              }
-            ]
-          },
-          {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "binding"
               },
               {
-                "type": "SYMBOL",
-                "name": "newline"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "content"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "children"
+                "type": "BLANK"
               }
             ]
           }
         ]
       }
-    },
-    "node": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "content"
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "children"
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
-        }
-      ]
     },
     "children": {
       "type": "SEQ",
@@ -225,6 +197,10 @@
     {
       "type": "SYMBOL",
       "name": "newline"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "mega_newline"
     }
   ],
   "inline": [],
