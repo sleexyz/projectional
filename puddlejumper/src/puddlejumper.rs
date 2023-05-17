@@ -163,6 +163,6 @@ mod tests {
         let result = p.pretty_print(&mut output);
         assert!(result.is_ok());
         let output = String::from_utf8(output).unwrap();
-        assert_eq!(output, "hello\n    world")
+        assert_eq!(output, "hello\n    world\n")
     }
 }
