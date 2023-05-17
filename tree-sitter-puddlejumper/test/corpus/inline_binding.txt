@@ -11,19 +11,18 @@ world
     world
 ---
 (document 
-    (node (binding (identifier)) (content) 
-    (newline))
-    (node (binding (identifier)) (content) 
-    (newline))
+    (node (binding (identifier)) (content) )
+    (newline)
+    (node (binding) (content) )
+    (newline)
 
-    (node (binding (identifier)) (content)
-    (newline))
-    (node (content) 
-    (newline))
+    (node (binding (identifier)) (content))
+    (newline)
+    (node (content) )
+    (newline)
 
     (node (binding (identifier)) (content) (children
         (indent)
         (node (content))
-    (dedent)
-))
-)
+    (dedent)))
+    (newline))

@@ -76,7 +76,9 @@ fn pretty_print(node: tree_sitter::Node, input: &str, out: &mut dyn std::io::Wri
 
     loop {
         let n = cursor.node();
-        if n.kind() == "content" {
+        if n.kind() == "content"
+        || n.kind() == "binding"
+        || n.kind() == "ref" {
             write_indent(out, indent_level)?;
             write!(out, "{}\n", &input[n.start_byte()..n.end_byte()])?;
         }
@@ -153,8 +155,19 @@ mod tests {
         assert!(result.is_ok());
         let output = String::from_utf8(output).unwrap();
         assert_eq!(output, "hello\n\n  world")
-
     }
+
+    #[test]
+    fn test_lossless_print_bindings() {
+        let code = String::from("@hello:\n@world");
+        let p = Parser::new(code);
+        let mut output = Vec::new();
+        let result = p.lossless_print(&mut output);
+        assert!(result.is_ok());
+        let output = String::from_utf8(output).unwrap();
+        assert_eq!(output, "@hello:\n\n\n\n@world")
+    }
+
     #[test]
     fn test_pretty_print() {
         let code = String::from("hello\n\n  world");
@@ -164,5 +177,16 @@ mod tests {
         assert!(result.is_ok());
         let output = String::from_utf8(output).unwrap();
         assert_eq!(output, "hello\n    world\n")
+    }
+
+    #[test]
+    fn test_pretty_print_bindings() {
+        let code = String::from("@hello:\n@world");
+        let p = Parser::new(code);
+        let mut output = Vec::new();
+        let result = p.pretty_print(&mut output);
+        assert!(result.is_ok());
+        let output = String::from_utf8(output).unwrap();
+        assert_eq!(output, "@hello:\n@world\n")
     }
 }

@@ -27,10 +27,6 @@
           "named": true
         },
         {
-          "type": "mega_newline",
-          "named": true
-        },
-        {
           "type": "newline",
           "named": true
         },
@@ -62,7 +58,19 @@
           "named": true
         },
         {
+          "type": "mega_newline",
+          "named": true
+        },
+        {
+          "type": "newline",
+          "named": true
+        },
+        {
           "type": "node",
+          "named": true
+        },
+        {
+          "type": "ref_node",
           "named": true
         }
       ]
@@ -81,7 +89,19 @@
           "named": true
         },
         {
+          "type": "mega_newline",
+          "named": true
+        },
+        {
+          "type": "newline",
+          "named": true
+        },
+        {
           "type": "node",
+          "named": true
+        },
+        {
+          "type": "ref_node",
           "named": true
         }
       ]
@@ -106,9 +126,39 @@
         {
           "type": "content",
           "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "ref",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "ref_node",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "children",
+          "named": true
         },
         {
-          "type": "newline",
+          "type": "ref",
           "named": true
         }
       ]

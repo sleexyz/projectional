@@ -11,14 +11,13 @@ hello
 ---
 (document 
     (block_node (binding (identifier)) 
-            (newline) 
-        (node (content)) 
-            (newline)
-        (node (content)) 
-            (mega_newline)
-    ) 
-    (block_node (binding (identifier)) (newline) 
-        (node (content))
-        (mega_newline)
-    ) 
+    (newline)
+    (node (content))
+    (newline)
+    (node (content)))
+    (mega_newline)
+
+    (block_node (binding (identifier)) (newline)
+    (node (content)))
+    (mega_newline)
 )

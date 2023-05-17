@@ -1,26 +1,22 @@
 ==================
 Reference
 ==================
+@x:
+@x
+
 
 @x:
 @x
 
-@x:
-    @x
-    @y
-
-@z
-
-
 ---
 (document 
-    (node (binding (identifier)) (newline)
-        (ref (identifier))) (newline)
-    (node (binding (identifier))
-        (children (indent) 
-            (node (ref (identifier))) (newline)
-            (node (ref (identifier))) (dedent)
-        )
-    ) 
-    (node (ref (identifier))) (newline)
+    (block_node (binding (identifier))
+    (newline)
+    (node (ref (identifier))))
+    (mega_newline)
+
+    (block_node (binding (identifier))
+    (newline)
+    (node (ref (identifier))))
+    (mega_newline)
 )
