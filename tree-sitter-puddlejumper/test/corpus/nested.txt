@@ -10,10 +10,13 @@ bar
 (document
     (node (content) (children 
         (indent) 
-        (node (content) (newline))
+        (node (content)) 
+        (newline)
         (node (content)) 
     (dedent)))
     (node (content) (children 
         (indent)
         (node (content)) 
-    (dedent))))
+    (dedent)))
+    (newline)
+    )

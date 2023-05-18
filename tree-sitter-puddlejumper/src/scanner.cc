@@ -12,10 +12,11 @@ enum TokenType {
   INDENT,
   DEDENT,
   NEWLINE,
-  MEGA_NEWLINE,
 };
 
 struct Scanner {
+  vector<uint16_t> indent_length_stack;
+
   Scanner() { deserialize(NULL, 0); }
 
   unsigned serialize(char *buffer) {
@@ -50,13 +51,11 @@ struct Scanner {
 
   bool scan(TSLexer *lexer, const bool *valid_symbols) {
     bool found_end_of_line = false;
-    uint32_t num_lines = 0;
     uint32_t indent_length = 0;
     for (;;) {
       if (lexer->lookahead == '\n') {
         found_end_of_line = true;
         indent_length = 0;
-        num_lines++;
         skip(lexer);
       } else if (lexer->lookahead == ' ') {
         indent_length++;
@@ -70,11 +69,9 @@ struct Scanner {
       } else if (lexer->lookahead == '\f') {
         indent_length = 0;
         skip(lexer);
-        // } else if (lexer->eof(lexer)) {
       } else if (lexer->lookahead == 0) {
         indent_length = 0;
         found_end_of_line = true;
-        num_lines += 10; // 10 is approximately infinity.
         break;
       } else {
         break;
@@ -82,16 +79,17 @@ struct Scanner {
     }
 
     if (found_end_of_line) {
-      if (!indent_length_stack.empty()) {
-        uint16_t current_indent_length = indent_length_stack.back();
+      uint16_t current_indent_length =
+          indent_length_stack.empty() ? 0 : indent_length_stack.back();
 
+      if (!indent_length_stack.empty()) {
         if (valid_symbols[INDENT] && indent_length > current_indent_length) {
           indent_length_stack.push_back(indent_length);
           lexer->result_symbol = INDENT;
           return true;
         }
 
-        if ((valid_symbols[DEDENT] || !(valid_symbols[NEWLINE] && valid_symbols[MEGA_NEWLINE])) &&
+        if ((valid_symbols[DEDENT] || !valid_symbols[NEWLINE]) &&
             indent_length < current_indent_length) {
           indent_length_stack.pop_back();
           lexer->result_symbol = DEDENT;
@@ -99,21 +97,16 @@ struct Scanner {
         }
       }
 
-      if (valid_symbols[NEWLINE] && (!valid_symbols[MEGA_NEWLINE]|| num_lines == 1)) {
+      if (valid_symbols[NEWLINE] &&
+          (current_indent_length == indent_length ||
+           !valid_symbols[INDENT] && !valid_symbols[DEDENT])) {
         lexer->result_symbol = NEWLINE;
-        return true;
-      }
-
-      if (valid_symbols[MEGA_NEWLINE] && (!valid_symbols[NEWLINE] || num_lines > 1)) {
-        lexer->result_symbol = MEGA_NEWLINE;
         return true;
       }
     }
 
     return false;
   }
-
-  vector<uint16_t> indent_length_stack;
 };
 
 } // namespace

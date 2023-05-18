@@ -14,10 +14,10 @@ hello
     (newline)
     (node (content))
     (newline)
-    (node (content)))
-    (mega_newline)
+    (node (content))
+    (newline))
 
     (block_node (binding (identifier)) (newline)
     (node (content)))
-    (mega_newline)
+    (newline)
 )

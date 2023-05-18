@@ -33,6 +33,10 @@
         {
           "type": "node",
           "named": true
+        },
+        {
+          "type": "ref_node",
+          "named": true
         }
       ]
     }
@@ -55,10 +59,6 @@
         },
         {
           "type": "indent",
-          "named": true
-        },
-        {
-          "type": "mega_newline",
           "named": true
         },
         {
@@ -86,10 +86,6 @@
       "types": [
         {
           "type": "block_node",
-          "named": true
-        },
-        {
-          "type": "mega_newline",
           "named": true
         },
         {
@@ -131,21 +127,6 @@
     }
   },
   {
-    "type": "ref",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "identifier",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "ref_node",
     "named": true,
     "fields": {},
@@ -158,15 +139,11 @@
           "named": true
         },
         {
-          "type": "ref",
+          "type": "identifier",
           "named": true
         }
       ]
     }
-  },
-  {
-    "type": ":",
-    "named": false
   },
   {
     "type": "@",
@@ -186,10 +163,6 @@
   },
   {
     "type": "indent",
-    "named": true
-  },
-  {
-    "type": "mega_newline",
     "named": true
   },
   {

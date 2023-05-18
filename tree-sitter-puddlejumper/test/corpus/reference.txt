@@ -4,19 +4,10 @@ Reference
 @x:
 @x
 
-
-@x:
-@x
-
 ---
 (document 
     (block_node (binding (identifier))
     (newline)
-    (node (ref (identifier))))
-    (mega_newline)
-
-    (block_node (binding (identifier))
+    (ref_node (identifier)))
     (newline)
-    (node (ref (identifier))))
-    (mega_newline)
 )
