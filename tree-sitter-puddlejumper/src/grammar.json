@@ -105,8 +105,8 @@
       ]
     },
     "block_node": {
-      "type": "PREC_LEFT",
-      "value": 0,
+      "type": "PREC_DYNAMIC",
+      "value": 1,
       "content": {
         "type": "SEQ",
         "members": [
@@ -242,6 +242,13 @@
         }
       ]
     },
+    "identifier": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PATTERN",
+        "value": "[a-zA-Z0-9_]+"
+      }
+    },
     "_binder": {
       "type": "SEQ",
       "members": [
@@ -258,11 +265,11 @@
         }
       ]
     },
-    "identifier": {
+    "_anonymous_binder": {
       "type": "TOKEN",
       "content": {
-        "type": "PATTERN",
-        "value": "[a-zA-Z0-9_]+"
+        "type": "STRING",
+        "value": "@"
       }
     },
     "binding": {
@@ -307,13 +314,6 @@
         }
       }
     },
-    "_anonymous_binder": {
-      "type": "TOKEN",
-      "content": {
-        "type": "STRING",
-        "value": "@"
-      }
-    },
     "content": {
       "type": "TOKEN",
       "content": {
@@ -331,6 +331,9 @@
   "conflicts": [
     [
       "_primary_node_line"
+    ],
+    [
+      "block_node"
     ]
   ],
   "precedences": [],

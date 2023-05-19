@@ -9,6 +9,7 @@ module.exports = grammar({
   ],
   conflicts: $ => [
     [$._primary_node_line],
+    [$.block_node],
   ],
   rules: {
     document: $ => optional($._stanza),
@@ -23,7 +24,9 @@ module.exports = grammar({
     ),
 
     _block_node_line: $ => seq($.block_node, optional($.newline)),
-    block_node: $ => prec.left(seq($.binding, $.newline, $._block_node_body)),
+    // We use prec.dynamic to have the parser prefer the block_node rule
+    // when constructing stanzas.
+    block_node: $ => prec.dynamic(1, seq($.binding, $.newline, $._block_node_body)),
     _block_node_body: $ => repeat1($._primary_node_line),
 
     node: $ => choice(
@@ -34,9 +37,10 @@ module.exports = grammar({
     children: $ => seq($.indent, $._stanza, $.dedent),
 
     ref_node: $ => seq($._binder, optional($.children)),
-    _binder: $ => seq(token("@"), $.identifier),
     identifier: $ => token(/[a-zA-Z0-9_]+/),
 
+    _binder: $ => seq(token("@"), $.identifier),
+    _anonymous_binder: $ => token("@"),
     binding: $ => choice(
       seq($._binder,  $._assignment),
       seq($._anonymous_binder,  $._assignment),
@@ -44,7 +48,6 @@ module.exports = grammar({
     // This needs to bind higher than content, otherwise the colon in a binding (e.g. `@foo: bar`)
     // will be parsed as the start of a content token.
     _assignment: $ => token(prec(1, ":")),
-    _anonymous_binder: $ => token("@"),
     content: $ => token(/[^@ \n][^\n]*/),
   },
 });

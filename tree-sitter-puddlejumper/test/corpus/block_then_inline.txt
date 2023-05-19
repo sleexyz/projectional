@@ -1,0 +1,20 @@
+==================
+Block binding, then inline binding
+==================
+@:
+Things to do
+    zzz
+
+@: sss
+---
+(document
+    (block_node (binding)
+    (newline)
+    (node
+        (content)
+        (children
+        (indent)
+        (node (content))
+    (dedent)))
+    (node (binding) (content))) 
+    (newline))

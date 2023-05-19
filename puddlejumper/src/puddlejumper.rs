@@ -47,9 +47,9 @@ fn debug_print(node: tree_sitter::Node, input: &str, out: &mut dyn std::io::Writ
             out,
             "{} [{}, {}] - [{}, {}]       {}\n",
             n.kind(),
-            start.row,
+            start.row + 1, // 1-indexed
             start.column,
-            end.row,
+            end.row + 1, // 1-indexed
             end.column,
             serde_json::to_string(content).unwrap()
         )?;
