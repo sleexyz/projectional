@@ -78,7 +78,7 @@ fn pretty_print(node: tree_sitter::Node, input: &str, out: &mut dyn std::io::Wri
         let n = cursor.node();
         if n.kind() == "content"
         || n.kind() == "binding"
-        || n.kind() == "ref_node" {
+        || n.kind() == "ref" {
             write_indent(out, indent_level)?;
             write!(out, "{}\n", &input[n.start_byte()..n.end_byte()])?;
         }
@@ -123,7 +123,7 @@ fn lossless_print(node: tree_sitter::Node, input: &str, out: &mut dyn std::io::W
             || n.kind() == "dedent"
             || n.kind() == "content"
             || n.kind() == "binding"
-            || n.kind() == "ref_node"
+            || n.kind() == "ref"
             || n.kind() == "block_header"
             {
             write!(out, "{}", &input[n.start_byte()..n.end_byte()])?;
