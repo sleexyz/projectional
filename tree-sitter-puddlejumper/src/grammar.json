@@ -152,7 +152,7 @@
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "_block_node_body"
+                  "name": "_block_body"
                 }
               ]
             },
@@ -163,7 +163,7 @@
         }
       ]
     },
-    "_block_node_body": {
+    "_block_body": {
       "type": "REPEAT1",
       "content": {
         "type": "SYMBOL",
@@ -332,7 +332,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "_binder"
+              "name": "ref"
             },
             {
               "type": "CHOICE",
@@ -361,7 +361,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "_binder"
+              "name": "ref"
             },
             {
               "type": "CHOICE",
@@ -382,7 +382,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "_binder"
+              "name": "ref"
             },
             {
               "type": "CHOICE",
@@ -399,6 +399,10 @@
           ]
         }
       ]
+    },
+    "ref": {
+      "type": "SYMBOL",
+      "name": "_binder"
     },
     "identifier": {
       "type": "TOKEN",

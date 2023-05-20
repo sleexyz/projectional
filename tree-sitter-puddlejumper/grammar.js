@@ -36,9 +36,9 @@ module.exports = grammar({
     children: $ => seq($.indent, $._stanza, $.dedent),
 
     node: makeBindableNode($ => $.content, {setDefault: true}),
-    ref_node: makeBindableNode($ => $._binder),
+    ref_node: makeBindableNode($ => $.ref),
+    ref: $ => $._binder,
     identifier: $ => token(prec(-1, /[a-zA-Z0-9_]+/)),
-
     _binder: $ => seq(token("@"), $.identifier),
     _anonymous_binder: $ => token("@"),
     binding: $ => choice(
