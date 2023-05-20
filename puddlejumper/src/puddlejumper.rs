@@ -78,7 +78,7 @@ fn pretty_print(node: tree_sitter::Node, input: &str, out: &mut dyn std::io::Wri
         let n = cursor.node();
         if n.kind() == "content"
         || n.kind() == "binding"
-        || n.kind() == "ref" {
+        || n.kind() == "ref_node" {
             write_indent(out, indent_level)?;
             write!(out, "{}\n", &input[n.start_byte()..n.end_byte()])?;
         }
@@ -119,18 +119,16 @@ fn lossless_print(node: tree_sitter::Node, input: &str, out: &mut dyn std::io::W
     loop {
         let n = cursor.node();
         if n.kind() == "newline"
-            || n.kind() == "mega_newline"
             || n.kind() == "indent"
             || n.kind() == "dedent"
             || n.kind() == "content"
             || n.kind() == "binding"
-            || n.kind() == "ref"
+            || n.kind() == "ref_node"
+            || n.kind() == "block_header"
             {
             write!(out, "{}", &input[n.start_byte()..n.end_byte()])?;
-        }
-
-        // Move to the next node
-        if cursor.goto_first_child() {
+        } else if cursor.goto_first_child() {
+            // Move to the next node
             continue;
         }
 
@@ -159,7 +157,7 @@ mod tests {
 
     #[test]
     fn test_lossless_print_bindings() {
-        let code = String::from("@hello:\n@world");
+        let code = String::from("@hello:\n\n\n\n@world");
         let p = Parser::new(code);
         let mut output = Vec::new();
         let result = p.lossless_print(&mut output);

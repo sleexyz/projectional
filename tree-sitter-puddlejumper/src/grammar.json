@@ -30,7 +30,7 @@
               "type": "REPEAT",
               "content": {
                 "type": "SYMBOL",
-                "name": "_block_node_line"
+                "name": "_block_node_section"
               }
             }
           ]
@@ -42,7 +42,7 @@
               "type": "REPEAT1",
               "content": {
                 "type": "SYMBOL",
-                "name": "_block_node_line"
+                "name": "_block_node_section"
               }
             }
           ]
@@ -83,7 +83,7 @@
         }
       ]
     },
-    "_block_node_line": {
+    "_block_node_section": {
       "type": "SEQ",
       "members": [
         {
@@ -105,25 +105,63 @@
       ]
     },
     "block_node": {
-      "type": "PREC_DYNAMIC",
-      "value": 1,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "SYMBOL",
-            "name": "binding"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "newline"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_block_node_body"
-          }
-        ]
-      }
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "binding"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "newline"
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "block_header"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "newline"
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_block_node_body"
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
     },
     "_block_node_body": {
       "type": "REPEAT1",
@@ -132,9 +170,66 @@
         "name": "_primary_node_line"
       }
     },
+    "block_header": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_block_begin"
+        },
+        {
+          "type": "PATTERN",
+          "value": "[\\s]+"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_primary_node"
+        }
+      ]
+    },
+    "_block_begin": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 1,
+        "content": {
+          "type": "STRING",
+          "value": "#"
+        }
+      }
+    },
     "node": {
       "type": "CHOICE",
       "members": [
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "binding"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "newline"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "content"
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "children"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          ]
+        },
         {
           "type": "SEQ",
           "members": [
@@ -245,8 +340,12 @@
     "identifier": {
       "type": "TOKEN",
       "content": {
-        "type": "PATTERN",
-        "value": "[a-zA-Z0-9_]+"
+        "type": "PREC",
+        "value": -1,
+        "content": {
+          "type": "PATTERN",
+          "value": "[a-zA-Z0-9_]+"
+        }
       }
     },
     "_binder": {
@@ -318,7 +417,7 @@
       "type": "TOKEN",
       "content": {
         "type": "PATTERN",
-        "value": "[^@ \\n][^\\n]*"
+        "value": "[^@# \\n][^\\n]*"
       }
     }
   },

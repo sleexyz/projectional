@@ -1,0 +1,31 @@
+==================
+Block
+==================
+# hello
+foo
+
+@a:
+# hello
+foo
+
+
+@b:
+# hello
+---
+(document 
+    (block_node (block_header (node (content)))
+    (newline)
+    (node (content))
+    (newline))
+
+    (block_node (binding (identifier)) 
+    (newline)
+    (block_header (node (content)))
+    (newline)
+    (node (content)))
+    (newline)
+
+    (block_node (binding (identifier)) (newline)
+    (block_header (node (content))))
+    (newline)
+)

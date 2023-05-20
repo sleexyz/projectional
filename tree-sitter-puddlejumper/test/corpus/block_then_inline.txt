@@ -2,19 +2,37 @@
 Block binding, then inline binding
 ==================
 @:
-Things to do
-    zzz
+# xxx
+    yyy
+@: zzz
 
-@: sss
+@:
+# aaa
+    bbb
+@:
+# foo
 ---
 (document
     (block_node (binding)
     (newline)
-    (node
-        (content)
+    (block_header (node (content)
         (children
-        (indent)
-        (node (content))
-    (dedent)))
-    (node (binding) (content))) 
+            (indent)
+            (node
+            (content))
+        (dedent))))
+    (node (binding) (content))
+    (newline)) 
+
+    (block_node (binding)
+    (newline)
+    (block_header (node (content)
+        (children
+            (indent)
+            (node
+            (content))
+        (dedent)))))
+    (block_node (binding)
+    (newline)
+    (block_header (node (content))))
     (newline))

@@ -1,13 +1,36 @@
 ==================
 Reference
 ==================
-@x:
-@x
+
+@foo:
+# Foo
+@foo
+
+# @foo
+@foo
+
+# Foo
+@foo
 
 ---
-(document 
-    (block_node (binding (identifier))
+
+(document
+    (block_node
+    (binding (identifier))
+    (newline)
+    (block_header (node (content)))
+    (newline)
+    (ref_node (identifier))
+    (newline))
+
+    (block_node
+    (block_header (ref_node (identifier)))
+    (newline)
+    (ref_node (identifier))
+    (newline))
+
+    (block_node
+    (block_header (node (content)))
     (newline)
     (ref_node (identifier)))
-    (newline)
-)
+    (newline))
