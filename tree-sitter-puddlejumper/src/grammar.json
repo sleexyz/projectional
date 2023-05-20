@@ -88,7 +88,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "block_node"
+          "name": "block"
         },
         {
           "type": "CHOICE",
@@ -104,7 +104,7 @@
         }
       ]
     },
-    "block_node": {
+    "block": {
       "type": "SEQ",
       "members": [
         {
@@ -198,6 +198,23 @@
         }
       }
     },
+    "children": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "indent"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_stanza"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "dedent"
+        }
+      ]
+    },
     "node": {
       "type": "CHOICE",
       "members": [
@@ -264,23 +281,6 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "binding"
-            },
-            {
-              "type": "PATTERN",
-              "value": "\\s*"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "children"
-            }
-          ]
-        },
-        {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
               "name": "content"
             },
             {
@@ -296,42 +296,105 @@
               ]
             }
           ]
-        }
-      ]
-    },
-    "children": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "indent"
         },
         {
-          "type": "SYMBOL",
-          "name": "_stanza"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "dedent"
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "binding"
+            },
+            {
+              "type": "PATTERN",
+              "value": "\\s*"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "children"
+            }
+          ]
         }
       ]
     },
     "ref_node": {
-      "type": "SEQ",
+      "type": "CHOICE",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "_binder"
-        },
-        {
-          "type": "CHOICE",
+          "type": "SEQ",
           "members": [
             {
               "type": "SYMBOL",
-              "name": "children"
+              "name": "binding"
             },
             {
-              "type": "BLANK"
+              "type": "SYMBOL",
+              "name": "newline"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_binder"
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "children"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "binding"
+            },
+            {
+              "type": "PATTERN",
+              "value": "\\s*"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_binder"
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "children"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_binder"
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "children"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
             }
           ]
         }
@@ -432,7 +495,7 @@
       "_primary_node_line"
     ],
     [
-      "block_node"
+      "block"
     ]
   ],
   "precedences": [],

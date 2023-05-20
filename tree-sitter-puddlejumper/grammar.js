@@ -6,11 +6,10 @@ module.exports = grammar({
     $.indent, 
     $.dedent, 
     $.newline, 
-    // $._block_begin
   ],
   conflicts: $ => [
     [$._primary_node_line],
-    [$.block_node], 
+    [$.block],
   ],
   rules: {
     document: $ => optional($._stanza),
@@ -24,29 +23,20 @@ module.exports = grammar({
       $.ref_node
     ),
 
-    _block_node_section: $ => seq($.block_node, optional($.newline)),
-    block_node: $ => seq(
+    _block_node_section: $ => seq($.block, optional($.newline)),
+    block: $ => seq(
       optional(seq($.binding, $.newline)),
       $.block_header, 
-      optional(seq(optional($.newline), $._block_node_body)),
+      optional(seq(optional($.newline), $._block_body)),
     ),
-    _block_node_body: $ => repeat1($._primary_node_line),
+    _block_body: $ => repeat1($._primary_node_line),
     block_header: $ => seq($._block_begin, /[\s]+/, $._primary_node),
     _block_begin: $ => token(prec(1, "#")),
-    node: $ => choice(
-      seq($.binding, $.newline, $.content, optional($.children)),
-      seq($.binding, /\s*/, $.content, optional($.children)),
-      seq($.binding, /\s*/, $.children),
-      seq($.content, optional($.children)),
-    ),
+
     children: $ => seq($.indent, $._stanza, $.dedent),
 
-    ref_node: $ => choice(
-      seq($.binding, $.newline, $.content, optional($.children)),
-      seq($.binding, /\s*/, $.content, optional($.children)),
-      seq($.binding, /\s*/, $.children),
-      seq($._binder, optional($.children)),
-    ),
+    node: makeBindableNode($ => $.content, {setDefault: true}),
+    ref_node: makeBindableNode($ => $._binder),
     identifier: $ => token(prec(-1, /[a-zA-Z0-9_]+/)),
 
     _binder: $ => seq(token("@"), $.identifier),
@@ -61,3 +51,19 @@ module.exports = grammar({
     content: $ => token(/[^@# \n][^\n]*/),
   },
 });
+
+function makeBindableNode(contentRule, {setDefault: setDefault = false} = {}) {
+  return $ => {
+    let rules = [
+      seq($.binding, $.newline, contentRule($), optional($.children)),
+      seq($.binding, /\s*/, contentRule($), optional($.children)),
+      seq(contentRule($), optional($.children)),
+    ];
+    if (setDefault) {
+      rules.push(seq($.binding, /\s*/, $.children))
+    }
+    return choice(
+      ...rules,
+    );
+  };
+}

@@ -13,7 +13,7 @@ Block binding, then inline binding
 # foo
 ---
 (document
-    (block_node (binding)
+    (block (binding)
     (newline)
     (block_header (node (content)
         (children
@@ -24,7 +24,7 @@ Block binding, then inline binding
     (node (binding) (content))
     (newline)) 
 
-    (block_node (binding)
+    (block (binding)
     (newline)
     (block_header (node (content)
         (children
@@ -32,7 +32,7 @@ Block binding, then inline binding
             (node
             (content))
         (dedent)))))
-    (block_node (binding)
+    (block (binding)
     (newline)
     (block_header (node (content))))
     (newline))

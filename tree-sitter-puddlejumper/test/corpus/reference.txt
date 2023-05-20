@@ -2,35 +2,29 @@
 Reference
 ==================
 
-@foo:
-# Foo
+@can_be_rebound:
 @foo
 
-# @foo
+# Can come after block
 @foo
 
-# Foo
+# @can_be_in_block_header
 @foo
 
 ---
 
 (document
-    (block_node
-    (binding (identifier))
+    (ref_node (binding (identifier)) (newline) (identifier))
     (newline)
+
+    (block
     (block_header (node (content)))
     (newline)
     (ref_node (identifier))
     (newline))
 
-    (block_node
+    (block
     (block_header (ref_node (identifier)))
-    (newline)
-    (ref_node (identifier))
-    (newline))
-
-    (block_node
-    (block_header (node (content)))
     (newline)
     (ref_node (identifier)))
     (newline))
