@@ -82,6 +82,10 @@ fn pretty_print(node: tree_sitter::Node, input: &str, out: &mut dyn std::io::Wri
             write_indent(out, indent_level)?;
             write!(out, "{}\n", &input[n.start_byte()..n.end_byte()])?;
         }
+        if n.kind() == "block_header" {
+            write_indent(out, indent_level)?;
+            write!(out, "# ")?;
+        }
 
         // Add newline if necessary
         if n.kind() == "children" {
@@ -167,6 +171,17 @@ mod tests {
     }
 
     #[test]
+    fn test_lossless_print_block() {
+        let code = String::from("@hello:\n\n#  @world");
+        let p = Parser::new(code);
+        let mut output = Vec::new();
+        let result = p.lossless_print(&mut output);
+        assert!(result.is_ok());
+        let output = String::from_utf8(output).unwrap();
+        assert_eq!(output, "@hello:\n\n#  @world")
+    }
+
+    #[test]
     fn test_pretty_print() {
         let code = String::from("hello\n\n  world");
         let p = Parser::new(code);
@@ -186,5 +201,16 @@ mod tests {
         assert!(result.is_ok());
         let output = String::from_utf8(output).unwrap();
         assert_eq!(output, "@hello:\n@world\n")
+    }
+
+    #[test]
+    fn test_pretty_print_block() {
+        let code = String::from("@hello:\n\n#  @world");
+        let p = Parser::new(code);
+        let mut output = Vec::new();
+        let result = p.pretty_print(&mut output);
+        assert!(result.is_ok());
+        let output = String::from_utf8(output).unwrap();
+        assert_eq!(output, "@hello:\n# @world\n")
     }
 }
