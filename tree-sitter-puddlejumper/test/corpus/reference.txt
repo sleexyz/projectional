@@ -14,17 +14,17 @@ Reference
 ---
 
 (document
-    (ref_node (binding (identifier)) (newline) (ref (identifier)))
+    (node (binding (identifier)) (newline) (ref (identifier)))
     (newline)
 
     (block
     (block_header (node (content)))
     (newline)
-    (ref_node (ref (identifier)))
+    (node (ref (identifier)))
     (newline))
 
     (block
-    (block_header (ref_node (ref (identifier))))
+    (block_header (node (ref (identifier))))
     (newline)
-    (ref_node (ref (identifier))))
+    (node (ref (identifier))))
     (newline))

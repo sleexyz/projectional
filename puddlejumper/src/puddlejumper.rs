@@ -1,5 +1,14 @@
-use tree_sitter::{self, Tree};
+use tree_sitter::{self, TreeCursor};
 use serde_json;
+
+#[derive(Debug)]
+pub enum Node<'a> {
+    Node(tree_sitter::Node<'a>, Option<String>, Vec<Node<'a>>),
+    RefNode(tree_sitter::Node<'a>, Option<String>, Vec<Node<'a>>),
+    BlockNode(tree_sitter::Node<'a>, Option<String>, Vec<Node<'a>>),
+    Ref(tree_sitter::Node<'a>, Option<String>, Vec<Node<'a>>),
+    Content(tree_sitter::Node<'a>, Option<String>, Vec<Node<'a>>),
+}
 
 pub struct Parser {
     pub parser: tree_sitter::Parser,
@@ -7,17 +16,56 @@ pub struct Parser {
     pub tree: tree_sitter::Tree,
 }
 
+pub fn should_parent(n: tree_sitter::Node) -> bool {
+    if n.kind() == "node" 
+    || n.kind() == "block_header"
+    || n.kind() == "ref"
+    || n.kind() == "block" {
+        return true;
+    }
+    return false;
+}
+
+pub struct Program {
+    pub parser: Parser,
+}
+impl Program {
+    pub fn to_node(&self) -> Node {
+        let mut cursor = self.parser.tree.root_node().walk();
+        let node_stack = vec![];
+        loop {
+            let n = cursor.node();
+            let node = Node::Node(n, None, vec![]);
+            node_stack.push(node);
+
+            // Move to the next node
+            if cursor.goto_first_child() {
+                continue;
+            }
+
+            // No child nodes, move to the next sibling or parent's next sibling
+            while !cursor.goto_next_sibling() {
+                if !cursor.goto_parent() {
+                    return node_stack[0];
+                }
+            }
+        }
+    }
+}
+
 impl Parser {
     pub fn new(text: String) -> Self {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(tree_sitter_puddlejumper::language()).expect("Error loading puddlejumper grammar");
-        let tree: Tree = parser.parse(&text, None).unwrap();
+        let tree: tree_sitter::Tree = parser.parse(&text, None).unwrap();
         Self {
             parser,
             text,
             tree,
         }
     }
+
+
     pub fn lossless_print(&self, out: &mut dyn std::io::Write) -> Result<(), std::io::Error> {
         return lossless_print(self.tree.root_node(), &self.text, out);
     }

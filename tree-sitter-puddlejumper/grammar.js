@@ -18,10 +18,7 @@ module.exports = grammar({
       seq(repeat1($._block_node_section)),
     ),
     _primary_node_line: $ => seq($._primary_node, optional($.newline)),
-    _primary_node: $ => choice(
-      $.node, 
-      $.ref_node
-    ),
+    _primary_node: $ => $.node, 
 
     _block_node_section: $ => seq($.block, optional($.newline)),
     block: $ => seq(
@@ -35,8 +32,16 @@ module.exports = grammar({
 
     children: $ => seq($.indent, $._stanza, $.dedent),
 
-    node: makeBindableNode($ => $.content, {setDefault: true}),
-    ref_node: makeBindableNode($ => $.ref),
+    node: $ => choice(
+      seq($.binding, $.newline, $._node_content, optional($.children)),
+      seq($.binding, /\s*/, $._node_content, optional($.children)),
+      seq($._node_content, optional($.children)),
+      seq($.binding, /\s*/, $.children),
+    ),
+    _node_content: $ => choice(
+      $.content,
+      $.ref
+    ),
     ref: $ => $._binder,
     identifier: $ => token(prec(-1, /[a-zA-Z0-9_]+/)),
     _binder: $ => seq(token("@"), $.identifier),
@@ -51,19 +56,3 @@ module.exports = grammar({
     content: $ => token(/[^@# \n][^\n]*/),
   },
 });
-
-function makeBindableNode(contentRule, {setDefault: setDefault = false} = {}) {
-  return $ => {
-    let rules = [
-      seq($.binding, $.newline, contentRule($), optional($.children)),
-      seq($.binding, /\s*/, contentRule($), optional($.children)),
-      seq(contentRule($), optional($.children)),
-    ];
-    if (setDefault) {
-      rules.push(seq($.binding, /\s*/, $.children))
-    }
-    return choice(
-      ...rules,
-    );
-  };
-}

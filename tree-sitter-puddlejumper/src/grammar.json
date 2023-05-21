@@ -71,17 +71,8 @@
       ]
     },
     "_primary_node": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "node"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "ref_node"
-        }
-      ]
+      "type": "SYMBOL",
+      "name": "node"
     },
     "_block_node_section": {
       "type": "SEQ",
@@ -231,7 +222,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "content"
+              "name": "_node_content"
             },
             {
               "type": "CHOICE",
@@ -260,7 +251,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "content"
+              "name": "_node_content"
             },
             {
               "type": "CHOICE",
@@ -281,7 +272,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "content"
+              "name": "_node_content"
             },
             {
               "type": "CHOICE",
@@ -316,87 +307,16 @@
         }
       ]
     },
-    "ref_node": {
+    "_node_content": {
       "type": "CHOICE",
       "members": [
         {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "binding"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "newline"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "ref"
-            },
-            {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "children"
-                },
-                {
-                  "type": "BLANK"
-                }
-              ]
-            }
-          ]
+          "type": "SYMBOL",
+          "name": "content"
         },
         {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "binding"
-            },
-            {
-              "type": "PATTERN",
-              "value": "\\s*"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "ref"
-            },
-            {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "children"
-                },
-                {
-                  "type": "BLANK"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "ref"
-            },
-            {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "children"
-                },
-                {
-                  "type": "BLANK"
-                }
-              ]
-            }
-          ]
+          "type": "SYMBOL",
+          "name": "ref"
         }
       ]
     },
