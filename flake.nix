@@ -15,25 +15,27 @@
         };
 
         # From https://github.com/loophp/rust-shell
-        rustInfo = ({
-          version,
-          profile,
-        }: let
-          rust = pkgs.rust-bin.${version}.latest.${profile}.override {extensions = ["rust-src"];};
-        in {
-          name = "rust-" + version + "-" + profile;
+        rustInfo = ({ version
+                    , profile
+                    ,
+                    }:
+          let
+            rust = pkgs.rust-bin.${version}.latest.${profile}.override { extensions = [ "rust-src" ]; };
+          in
+          {
+            name = "rust-" + version + "-" + profile;
 
-          # From https://discourse.nixos.org/t/rust-src-not-found-and-other-misadventures-of-developing-rust-on-nixos/11570/11
-          path = "${rust}/lib/rustlib/src/rust/library";
+            # From https://discourse.nixos.org/t/rust-src-not-found-and-other-misadventures-of-developing-rust-on-nixos/11570/11
+            path = "${rust}/lib/rustlib/src/rust/library";
 
-          drvs = [
-            pkgs.just
-            pkgs.openssl
-            pkgs.pkgconfig
-            pkgs.rust-analyzer
-            rust
-          ];
-        }) {
+            drvs = [
+              pkgs.just
+              pkgs.openssl
+              pkgs.pkgconfig
+              pkgs.rust-analyzer
+              rust
+            ];
+          }) {
           version = "stable";
           profile = "default";
         };
@@ -46,6 +48,7 @@
             # openssl
             # pkg-config
             rustInfo.drvs
+            rustfmt
             nodejs-18_x
             entr
             emscripten

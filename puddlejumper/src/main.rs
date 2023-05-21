@@ -2,7 +2,7 @@ mod puddlejumper;
 use std::env;
 use std::fs;
 fn print_usage() {
-    println!("Usage: cargo run -- [pretty_print | print | debug_print] <file_path>");
+    println!("Usage: cargo run -- [pretty_print | print | debug_print | parse] <file_path>");
 }
 
 fn main() {
@@ -16,6 +16,7 @@ fn main() {
     let mut pretty_print = false;
     let mut lossless_print = false;
     let mut debug_print = false;
+    let mut parse = false;
 
     let mut i = 1;
     while i < args.len() {
@@ -23,6 +24,7 @@ fn main() {
             "pretty_print" => pretty_print = true,
             "debug_print" => debug_print = true,
             "print" => lossless_print = true,
+            "parse" => parse = true,
             _ => {
                 file_path = &args[i];
                 break;
@@ -71,6 +73,19 @@ fn main() {
             Ok(_) => (),
             Err(error) => {
                 println!("Error debug printing file: {}", error);
+                return;
+            }
+        }
+    } else if parse {
+        let result = p.load_document();
+        match result {
+            Some(node) => {
+                println!("{:#?}", node);
+                println!("File parsed successfully");
+                return;
+            }
+            None => {
+                println!("Error parsing file");
                 return;
             }
         }

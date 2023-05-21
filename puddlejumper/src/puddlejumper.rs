@@ -1,13 +1,30 @@
-use tree_sitter::{self, TreeCursor};
 use serde_json;
+use tree_sitter;
+
+#[derive(Debug)]
+pub enum Content {
+    Content(String),
+    Ref(String),
+}
 
 #[derive(Debug)]
 pub enum Node<'a> {
-    Node(tree_sitter::Node<'a>, Option<String>, Vec<Node<'a>>),
-    RefNode(tree_sitter::Node<'a>, Option<String>, Vec<Node<'a>>),
-    BlockNode(tree_sitter::Node<'a>, Option<String>, Vec<Node<'a>>),
-    Ref(tree_sitter::Node<'a>, Option<String>, Vec<Node<'a>>),
-    Content(tree_sitter::Node<'a>, Option<String>, Vec<Node<'a>>),
+    Document {
+        t_node: tree_sitter::Node<'a>,
+        children: Vec<Node<'a>>,
+    },
+    Node {
+        t_node: tree_sitter::Node<'a>,
+        binding: Option<String>,
+        content: Option<Content>,
+        children: Vec<Node<'a>>,
+    },
+    Block {
+        t_node: tree_sitter::Node<'a>,
+        binding: Option<String>,
+        header: Box<Node<'a>>,
+        children: Vec<Node<'a>>,
+    },
 }
 
 pub struct Parser {
@@ -16,55 +33,15 @@ pub struct Parser {
     pub tree: tree_sitter::Tree,
 }
 
-pub fn should_parent(n: tree_sitter::Node) -> bool {
-    if n.kind() == "node" 
-    || n.kind() == "block_header"
-    || n.kind() == "ref"
-    || n.kind() == "block" {
-        return true;
-    }
-    return false;
-}
-
-pub struct Program {
-    pub parser: Parser,
-}
-impl Program {
-    pub fn to_node(&self) -> Node {
-        let mut cursor = self.parser.tree.root_node().walk();
-        let node_stack = vec![];
-        loop {
-            let n = cursor.node();
-            let node = Node::Node(n, None, vec![]);
-            node_stack.push(node);
-
-            // Move to the next node
-            if cursor.goto_first_child() {
-                continue;
-            }
-
-            // No child nodes, move to the next sibling or parent's next sibling
-            while !cursor.goto_next_sibling() {
-                if !cursor.goto_parent() {
-                    return node_stack[0];
-                }
-            }
-        }
-    }
-}
-
 impl Parser {
     pub fn new(text: String) -> Self {
         let mut parser = tree_sitter::Parser::new();
-        parser.set_language(tree_sitter_puddlejumper::language()).expect("Error loading puddlejumper grammar");
+        parser
+            .set_language(tree_sitter_puddlejumper::language())
+            .expect("Error loading puddlejumper grammar");
         let tree: tree_sitter::Tree = parser.parse(&text, None).unwrap();
-        Self {
-            parser,
-            text,
-            tree,
-        }
+        Self { parser, text, tree }
     }
-
 
     pub fn lossless_print(&self, out: &mut dyn std::io::Write) -> Result<(), std::io::Error> {
         return lossless_print(self.tree.root_node(), &self.text, out);
@@ -77,9 +54,118 @@ impl Parser {
     pub fn debug_print(&self, out: &mut dyn std::io::Write) -> Result<(), std::io::Error> {
         return debug_print(self.tree.root_node(), &self.text, out);
     }
+
+    pub fn get_text(&self, n: tree_sitter::Node) -> String {
+        return self.text[n.start_byte()..n.end_byte()].to_string();
+    }
+
+    pub fn load_document(&self) -> Option<Node> {
+        return self.load(self.tree.root_node());
+    }
+
+    pub fn load<'tree>(&self, t_node: tree_sitter::Node<'tree>) -> Option<Node<'tree>> {
+        if t_node.kind() == "document" {
+            let mut children: Vec<Node> = Vec::new();
+            for child in t_node.children_by_field_name("children", &mut t_node.walk()) {
+                self.load(child).map(|node| {
+                    children.push(node);
+                });
+            }
+            return Some(Node::Document { t_node, children });
+        }
+        if t_node.kind() == "node" {
+            let binding: Option<String> = t_node
+                .child_by_field_name("binding")
+                .and_then(|binding: tree_sitter::Node| {
+                    return binding.child_by_field_name("identifier");
+                })
+                .map(|identifier: tree_sitter::Node| {
+                    return self.get_text(identifier);
+                });
+            let content: Option<Content> =
+                t_node
+                    .child_by_field_name("content")
+                    .and_then(|n: tree_sitter::Node| {
+                        if n.kind() == "content" {
+                            return Some(Content::Content(self.get_text(n)));
+                        }
+                        if n.kind() == "ref" {
+                            return Some(Content::Ref(self.get_text(n)));
+                        }
+                        return None;
+                    });
+            let mut children: Vec<Node> = Vec::new();
+            t_node
+                .child_by_field_name("children")
+                .map(|child: tree_sitter::Node| {
+                    let cursor = &mut child.walk();
+                    cursor.goto_first_child();
+                    loop {
+                        let n = cursor.node();
+                        self.load(n).map(|node| {
+                            children.push(node);
+                        });
+                        if !cursor.goto_next_sibling() {
+                            break;
+                        }
+                    }
+                });
+            return Some(Node::Node {
+                t_node,
+                binding,
+                content,
+                children,
+            });
+        }
+        if t_node.kind() == "block" {
+            let binding: Option<String> = t_node
+                .child_by_field_name("binding")
+                .and_then(|binding: tree_sitter::Node| {
+                    return binding.child_by_field_name("identifier");
+                })
+                .map(|identifier: tree_sitter::Node| {
+                    return self.get_text(identifier);
+                });
+            let header: Option<Node> =
+                t_node
+                    .child_by_field_name("header")
+                    .and_then(|child: tree_sitter::Node| {
+                        return self.load(child);
+                    });
+            let mut children: Vec<Node> = Vec::new();
+            t_node
+                .child_by_field_name("children")
+                .map(|child: tree_sitter::Node| {
+                    let cursor = &mut child.walk();
+                    cursor.goto_first_child();
+                    loop {
+                        let n = cursor.node();
+                        self.load(n).map(|node| {
+                            children.push(node);
+                        });
+                        if !cursor.goto_next_sibling() {
+                            break;
+                        }
+                    }
+                });
+            return header.map(|header| {
+                return Node::Block {
+                    t_node,
+                    binding,
+                    header: Box::new(header),
+                    children,
+                };
+            });
+        }
+        return None;
+    }
 }
 
-fn debug_print(node: tree_sitter::Node, input: &str, out: &mut dyn std::io::Write) -> Result<(), std::io::Error> {
+fn debug_print(
+    node: tree_sitter::Node,
+    input: &str,
+    out: &mut dyn std::io::Write,
+) -> Result<(), std::io::Error> {
     let mut indent_level = 0;
     let mut cursor = node.walk();
 
@@ -118,15 +204,17 @@ fn debug_print(node: tree_sitter::Node, input: &str, out: &mut dyn std::io::Writ
     }
 }
 
-fn pretty_print(node: tree_sitter::Node, input: &str, out: &mut dyn std::io::Write) -> Result<(), std::io::Error> {
+fn pretty_print(
+    node: tree_sitter::Node,
+    input: &str,
+    out: &mut dyn std::io::Write,
+) -> Result<(), std::io::Error> {
     let mut indent_level = 0;
     let mut cursor = node.walk();
 
     loop {
         let n = cursor.node();
-        if n.kind() == "content"
-        || n.kind() == "binding"
-        || n.kind() == "ref" {
+        if n.kind() == "content" || n.kind() == "binding" || n.kind() == "ref" {
             write_indent(out, indent_level)?;
             write!(out, "{}\n", &input[n.start_byte()..n.end_byte()])?;
         }
@@ -157,7 +245,7 @@ fn pretty_print(node: tree_sitter::Node, input: &str, out: &mut dyn std::io::Wri
     }
 }
 
-fn write_indent(out: &mut dyn std::io::Write,indent_level: usize) -> Result<(), std::io::Error> {
+fn write_indent(out: &mut dyn std::io::Write, indent_level: usize) -> Result<(), std::io::Error> {
     let indent = "    ";
     for _ in 0..indent_level {
         write!(out, "{}", indent)?;
@@ -165,8 +253,11 @@ fn write_indent(out: &mut dyn std::io::Write,indent_level: usize) -> Result<(), 
     return Ok(());
 }
 
-
-fn lossless_print(node: tree_sitter::Node, input: &str, out: &mut dyn std::io::Write) -> Result<(), std::io::Error> {
+fn lossless_print(
+    node: tree_sitter::Node,
+    input: &str,
+    out: &mut dyn std::io::Write,
+) -> Result<(), std::io::Error> {
     let mut cursor = node.walk();
     loop {
         let n = cursor.node();
@@ -177,7 +268,7 @@ fn lossless_print(node: tree_sitter::Node, input: &str, out: &mut dyn std::io::W
             || n.kind() == "binding"
             || n.kind() == "ref"
             || n.kind() == "block_header"
-            {
+        {
             write!(out, "{}", &input[n.start_byte()..n.end_byte()])?;
         } else if cursor.goto_first_child() {
             // Move to the next node
