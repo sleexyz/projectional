@@ -4,19 +4,15 @@ Nested document
 hello
     world
     foo
+        bah
 bar
-    baz
+baz
 ---
 (document
     (node (content) (children 
-        (indent) 
         (node (content)) 
-        (newline)
-        (node (content)) 
-    (dedent)))
-    (node (content) (children 
-        (indent)
-        (node (content)) 
-    (dedent)))
-    (newline)
-    )
+        (node (content) (children
+            (node (content))))))
+
+    (node (content))
+    (node (content)))

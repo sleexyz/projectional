@@ -2,7 +2,7 @@
 // @ts-check
 module.exports = grammar({
   name: "puddlejumper",
-  externals: ($) => [$.indent, $.dedent, $.newline],
+  externals: ($) => [$._indent, $._dedent, $._newline],
   conflicts: ($) => [[$._node_line], [$.block]],
   rules: {
     document: ($) => optional(field("children", $._body)),
@@ -11,26 +11,26 @@ module.exports = grammar({
         seq(repeat1($._node_line), repeat($._block_node_section)),
         seq(repeat1($._block_node_section))
       ),
-    _node_line: ($) => seq($.node, optional($.newline)),
+    _node_line: ($) => seq($.node, optional($._newline)),
 
-    _block_node_section: ($) => seq($.block, optional($.newline)),
+    _block_node_section: ($) => seq($.block, optional($._newline)),
     block: ($) =>
       seq(
-        optional(seq(field("binding", $.binding), $.newline)),
+        optional(seq(field("binding", $.binding), $._newline)),
         field("header", $.block_header),
-        optional(seq(optional($.newline), field("children", $._block_body)))
+        optional(seq(optional($._newline), field("children", $._block_body)))
       ),
     _block_body: ($) => repeat1($._node_line),
     block_header: ($) => seq($._block_begin, /[\s]+/, $.node),
     _block_begin: ($) => token(prec(1, "#")),
 
-    children: ($) => seq($.indent, $._body, $.dedent),
+    children: ($) => seq($._indent, $._body, $._dedent),
 
     node: ($) =>
       choice(
         seq(
           field("binding", $.binding),
-          $.newline,
+          $._newline,
           field("content", $._node_content),
           optional(field("children", $.children))
         ),
