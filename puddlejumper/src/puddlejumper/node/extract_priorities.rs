@@ -6,7 +6,8 @@ impl Context {
         self.extract_priorities_rec(node, &mut priorities);
         return priorities;
     }
-    fn extract_priorities_rec<'a>(&'a self, node: NodeId, priorities: &mut Vec<(NodeId, i32)>) {
+
+    fn extract_priorities_rec(&self, node: NodeId, priorities: &mut Vec<(NodeId, i32)>) {
         match &self.arena[node] {
             Node::Document { children, .. } => {
                 for child in children {
@@ -60,7 +61,7 @@ impl Context {
                 .enumerate()
                 .map(|(index, nodes)| {
                     if nodes.len() == 0 {
-                        return None
+                        return None;
                     }
                     Some(self.arena.alloc(Node::Node {
                         binding: None,
@@ -73,5 +74,4 @@ impl Context {
         };
         self.arena.alloc(list)
     }
-
 }
