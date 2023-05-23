@@ -1,7 +1,7 @@
 mod puddlejumper;
 use std::env;
 use std::fs;
-use std::io::{Error, ErrorKind};
+use std::io::{Error, ErrorKind}; 
 
 fn print_usage() {
     println!("Usage: cargo run -- [print | debug_print | parse | print_prioritized] <file_path>");
@@ -33,7 +33,7 @@ fn main() {
     };
 
     // Parse and print the code
-    let p = puddlejumper::Parser::new(code);
+    let p = puddlejumper::parser::Parser::new(code);
     match command {
         "print" => {
             let result = p.pretty_print(&mut std::io::stdout(), 0);
@@ -58,8 +58,8 @@ fn main() {
         "parse" => {
             let result = p.load_document();
             match result {
-                Some(node) => {
-                    println!("{:#?}", node);
+                Some((ctx, node)) => {
+                    println!("{:#?}", ctx.arena[node]);
                     println!("File parsed successfully");
                     return;
                 }
@@ -73,14 +73,16 @@ fn main() {
             let result = p
                 .load_document()
                 .ok_or(Error::new(ErrorKind::Other, "Error parsing file"))
-                .and_then(|node| {
-                    let list = node.make_prioritized_list();
-                    return list.pretty_print(&mut puddlejumper::PrintContext {
-                        level: 0,
-                        needs_indent: true,
-                        out: &mut std::io::stdout(),
-                        input: &p.text,
-                    })
+                .and_then(|(mut ctx, node)| {
+                    let list = ctx.make_prioritized_list(node);
+                    return ctx.pretty_print(
+                        list,
+                        &mut puddlejumper::node::PrintContext {
+                            level: 0,
+                            needs_indent: true,
+                            out: &mut std::io::stdout(),
+                        },
+                    );
                 });
             match result {
                 Ok(_) => (),
