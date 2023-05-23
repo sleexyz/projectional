@@ -1,7 +1,7 @@
 mod puddlejumper;
 use std::env;
 use std::fs;
-use std::io::{Error, ErrorKind}; 
+use std::io::{Error, ErrorKind};
 
 fn print_usage() {
     println!("Usage: cargo run -- [print | debug_print | parse | print_prioritized] <file_path>");
@@ -77,7 +77,7 @@ fn main() {
                     let list = ctx.make_prioritized_list(node);
                     return ctx.pretty_print(
                         list,
-                        &mut puddlejumper::node::PrintContext {
+                        &mut puddlejumper::node::printer::PrintContext {
                             level: 0,
                             needs_indent: true,
                             out: &mut std::io::stdout(),

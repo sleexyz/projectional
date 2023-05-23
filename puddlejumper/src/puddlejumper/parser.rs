@@ -1,7 +1,7 @@
-use serde_json;
-use tree_sitter;
 use super::node::*;
 use id_arena::Arena;
+use serde_json;
+use tree_sitter;
 
 pub struct Parser {
     pub parser: tree_sitter::Parser,
@@ -35,7 +35,7 @@ impl Parser {
         return self.text[n.start_byte()..n.end_byte()].to_string();
     }
 
-    pub fn load_document(&self) -> Option<(Context, ASTId)> {
+    pub fn load_document(&self) -> Option<(Context, NodeId)> {
         let mut context = Context {
             arena: Arena::new(),
         };
@@ -43,15 +43,15 @@ impl Parser {
         return Some((context, id));
     }
 
-    pub fn load(&self, t_node: &tree_sitter::Node, context: &mut Context) -> Option<ASTId> {
+    pub fn load(&self, t_node: &tree_sitter::Node, context: &mut Context) -> Option<NodeId> {
         if t_node.kind() == "document" {
-            let mut children: Vec<ASTId> = Vec::new();
+            let mut children: Vec<NodeId> = Vec::new();
             for child in t_node.children_by_field_name("children", &mut t_node.walk()) {
                 self.load(&child, context).map(|node_id| {
                     children.push(node_id);
                 });
             }
-            return Some(context.arena.alloc(AST::Document { data: (), children }));
+            return Some(context.arena.alloc(Node::Document { children }));
         }
         if t_node.kind() == "node" {
             let binding: Option<String> = t_node
@@ -74,7 +74,7 @@ impl Parser {
                         }
                         return None;
                     });
-            let mut children: Vec<ASTId> = Vec::new();
+            let mut children: Vec<NodeId> = Vec::new();
             t_node
                 .child_by_field_name("children")
                 .map(|child: tree_sitter::Node| {
@@ -90,8 +90,7 @@ impl Parser {
                         }
                     }
                 });
-            return Some(context.arena.alloc(AST::Node {
-                data: (),
+            return Some(context.arena.alloc(Node::Node {
                 binding,
                 content,
                 children,
@@ -106,13 +105,13 @@ impl Parser {
                 .map(|identifier: tree_sitter::Node| {
                     return self.get_text(identifier);
                 });
-            let header: Option<ASTId> =
+            let header: Option<NodeId> =
                 t_node
                     .child_by_field_name("header")
                     .and_then(|child: tree_sitter::Node| {
                         return self.load(&child, context);
                     });
-            let mut children: Vec<ASTId> = Vec::new();
+            let mut children: Vec<NodeId> = Vec::new();
             t_node
                 .child_by_field_name("children")
                 .map(|child: tree_sitter::Node| {
@@ -129,8 +128,7 @@ impl Parser {
                     }
                 });
             return header.map(|header| {
-                return context.arena.alloc(AST::Block {
-                    data: (),
+                return context.arena.alloc(Node::Block {
                     binding,
                     header,
                     children,
