@@ -1,0 +1,8 @@
+export NODE_OPTIONS := "--openssl-legacy-provider"
+export CC := `which clang-wasi32`
+
+build:
+    npm run build
+
+start:
+    npm run start

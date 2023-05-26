@@ -1,0 +1,7 @@
+set positional-arguments
+
+@run *args='':
+    cargo run --features native $@
+
+@build *args='':
+    cargo build $@

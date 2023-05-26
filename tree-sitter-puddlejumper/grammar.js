@@ -2,7 +2,7 @@
 // @ts-check
 module.exports = grammar({
   name: "puddlejumper",
-  externals: ($) => [$._indent, $._dedent, $._newline],
+  externals: ($) => [$._newline, $._indent, $._dedent],
   conflicts: ($) => [[$._node_line], [$.block]],
   rules: {
     document: ($) => optional(field("children", $._body)),
