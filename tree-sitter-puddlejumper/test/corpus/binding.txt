@@ -20,29 +20,17 @@ hello
 ---
 (document 
     (node (binding (identifier)) (content))
-    (newline)
     (node (binding) (content))
-    (newline)
 
     (node (binding (identifier)) (content))
-    (newline)
     (node (content))
-    (newline)
 
     (node (binding (identifier)) (content) (children
-        (indent)
-        (node (content))
-    (dedent)))
+        (node (content))))
 
     (node (binding (identifier))
-        (newline)
         (content))
-    (newline)
     (node (binding (identifier))
-    (newline)
     (content)
     (children
-        (indent)
-        (node (binding (identifier)) (newline) (content))
-    (dedent)))
-    (newline))
+        (node (binding (identifier)) (content)))))

@@ -1,8 +1,10 @@
 mod puddlejumper;
 use std::env;
 use std::fs;
+use std::io::{Error, ErrorKind};
+
 fn print_usage() {
-    println!("Usage: cargo run -- [pretty_print | print | debug_print] <file_path>");
+    println!("Usage: cargo run -- [print | debug_print | parse | print_prioritized] <file_path>");
 }
 
 fn main() {
@@ -12,24 +14,9 @@ fn main() {
         print_usage();
         return;
     }
-    let mut file_path = "";
-    let mut pretty_print = false;
-    let mut lossless_print = false;
-    let mut debug_print = false;
 
-    let mut i = 1;
-    while i < args.len() {
-        match args[i].as_str() {
-            "pretty_print" => pretty_print = true,
-            "debug_print" => debug_print = true,
-            "print" => lossless_print = true,
-            _ => {
-                file_path = &args[i];
-                break;
-            }
-        }
-        i += 1;
-    }
+    let command: &str = args[1].as_str();
+    let file_path: &str = &args[2].as_str();
 
     if file_path == "" {
         print_usage();
@@ -46,35 +33,68 @@ fn main() {
     };
 
     // Parse and print the code
-    let p = puddlejumper::Parser::new(code);
-    if pretty_print {
-        let result = p.pretty_print(&mut std::io::stdout());
-        match result {
-            Ok(_) => (),
-            Err(error) => {
-                println!("Error pretty printing file: {}", error);
-                return;
+    let p = puddlejumper::parser::Parser::new(code);
+    match command {
+        "print" => {
+            let result = p.pretty_print(&mut std::io::stdout(), 0);
+            match result {
+                Ok(_) => (),
+                Err(error) => {
+                    println!("Error pretty printing file: {}", error);
+                    return;
+                }
             }
         }
-    } else if lossless_print {
-        let result = p.lossless_print(&mut std::io::stdout());
-        match result {
-            Ok(_) => (),
-            Err(error) => {
-                println!("Error lossless printing file: {}", error);
-                return;
+        "debug_print" => {
+            let result = p.debug_print(&mut std::io::stdout());
+            match result {
+                Ok(_) => (),
+                Err(error) => {
+                    println!("Error debug printing file: {}", error);
+                    return;
+                }
             }
         }
-    } else if debug_print {
-        let result = p.debug_print(&mut std::io::stdout());
-        match result {
-            Ok(_) => (),
-            Err(error) => {
-                println!("Error debug printing file: {}", error);
-                return;
+        "parse" => {
+            let result = p.load_document();
+            match result {
+                Some((ctx, node)) => {
+                    println!("{:#?}", ctx.arena[node]);
+                    println!("File parsed successfully");
+                    return;
+                }
+                None => {
+                    println!("Error parsing file");
+                    return;
+                }
             }
         }
-    } else {
-        print_usage()
+        "print_prioritized" => {
+            let result = p
+                .load_document()
+                .ok_or(Error::new(ErrorKind::Other, "Error parsing file"))
+                .and_then(|(mut ctx, node)| {
+                    let list = ctx.make_prioritized_list(node);
+                    return ctx.pretty_print(
+                        list,
+                        &mut puddlejumper::node::printer::PrintContext {
+                            level: 0,
+                            needs_indent: true,
+                            out: &mut std::io::stdout(),
+                        },
+                    );
+                });
+            match result {
+                Ok(_) => (),
+                Err(error) => {
+                    println!("Error printing file: {}", error);
+                    return;
+                }
+            }
+        }
+        _ => {
+            print_usage();
+            return;
+        }
     }
 }

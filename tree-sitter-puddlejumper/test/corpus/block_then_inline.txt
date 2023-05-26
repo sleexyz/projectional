@@ -14,25 +14,16 @@ Block binding, then inline binding
 ---
 (document
     (block (binding)
-    (newline)
     (block_header (node (content)
         (children
-            (indent)
             (node
-            (content))
-        (dedent))))
-    (node (binding) (content))
-    (newline)) 
+            (content)))))
+    (node (binding) (content)))
 
     (block (binding)
-    (newline)
     (block_header (node (content)
         (children
-            (indent)
             (node
-            (content))
-        (dedent)))))
+            (content))))))
     (block (binding)
-    (newline)
-    (block_header (node (content))))
-    (newline))
+    (block_header (node (content)))))

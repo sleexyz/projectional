@@ -14,18 +14,11 @@ foo
 ---
 (document 
     (block (block_header (node (content)))
-    (newline)
-    (node (content))
-    (newline))
+    (node (content)))
 
     (block (binding (identifier)) 
-    (newline)
     (block_header (node (content)))
-    (newline)
     (node (content)))
-    (newline)
 
-    (block (binding (identifier)) (newline)
-    (block_header (node (content))))
-    (newline)
-)
+    (block (binding (identifier))
+    (block_header (node (content)))))

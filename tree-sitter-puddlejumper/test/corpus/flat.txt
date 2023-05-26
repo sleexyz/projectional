@@ -8,6 +8,4 @@ world asdf
 
 (document
     (node (content))
-    (newline)
-    (node (content))
-    (newline))
+    (node (content)))
