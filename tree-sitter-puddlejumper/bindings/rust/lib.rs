@@ -4,6 +4,7 @@
 //! tree-sitter [Parser][], and then use the parser to parse some code:
 //!
 //! ```
+//! use tree_sitter_c2rust as tree_sitter;
 //! let code = "";
 //! let mut parser = tree_sitter::Parser::new();
 //! parser.set_language(tree_sitter_puddlejumper::language()).expect("Error loading puddlejumper grammar");
@@ -15,16 +16,27 @@
 //! [Parser]: https://docs.rs/tree-sitter/*/tree_sitter/struct.Parser.html
 //! [tree-sitter]: https://tree-sitter.github.io/
 
-use tree_sitter::Language;
+
+#[cfg(all(feature = "native", feature = "wasm"))]
+compile_error!("feature \"native\" and feature \"wasm\" cannot be enabled at the same time");
+
+#[cfg(feature = "native")]
+use tree_sitter;
+
+#[cfg(feature = "wasm")]
+use tree_sitter_c2rust as tree_sitter;
+
+#[cfg(feature = "wasm")]
+mod scanner;
 
 extern "C" {
-    fn tree_sitter_puddlejumper() -> Language;
+    fn tree_sitter_puddlejumper() -> tree_sitter::Language;
 }
 
 /// Get the tree-sitter [Language][] for this grammar.
 ///
 /// [Language]: https://docs.rs/tree-sitter/*/tree_sitter/struct.Language.html
-pub fn language() -> Language {
+pub fn language() -> tree_sitter::Language {
     unsafe { tree_sitter_puddlejumper() }
 }
 
@@ -42,6 +54,16 @@ pub const NODE_TYPES: &'static str = include_str!("../../src/node-types.json");
 
 #[cfg(test)]
 mod tests {
+
+    #[cfg(feature = "native")]
+    use tree_sitter;
+
+    #[cfg(feature = "wasm")]
+    use tree_sitter_c2rust as tree_sitter;
+
+    // use tree_sitter_c2rust as tree_sitter;
+    // use tree_sitter;
+
     #[test]
     fn test_can_load_grammar() {
         let mut parser = tree_sitter::Parser::new();

@@ -1,9 +1,20 @@
 use super::node::*;
 use id_arena::Arena;
 use serde_json;
+
+#[cfg(all(feature = "native", feature = "wasm"))]
+compile_error!("feature \"native\" and feature \"wasm\" cannot be enabled at the same time");
+
+#[cfg(feature = "native")]
 use tree_sitter;
 
+#[cfg(feature = "wasm")]
+use tree_sitter_c2rust as tree_sitter;
+
+// use tree_sitter_c2rust as tree_sitter;
+
 pub struct Parser {
+
     pub parser: tree_sitter::Parser,
     pub text: String,
     pub tree: tree_sitter::Tree,

@@ -5,56 +5,74 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
   };
 
-
   outputs = { self, nixpkgs, flake-utils, rust-overlay }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs {
-          inherit system overlays;
+          inherit system;
+          overlays = [
+            (import rust-overlay)
+          ];
         };
 
         # From https://github.com/loophp/rust-shell
-        rustInfo = ({ version
-                    , profile
-                    ,
-                    }:
+        rustInfo =
+          with pkgs;
           let
-            rust = pkgs.rust-bin.${version}.latest.${profile}.override { extensions = [ "rust-src" ]; };
+            rust = rust-bin.stable.latest.default.override {
+              extensions = [ "rust-src" ];
+              # From https://gist.github.com/oxalica/310d9a1ba69fd10123f2d70dc6e00f0b
+              targets = [ "wasm32-unknown-unknown" ];
+            };
           in
           {
-            name = "rust-" + version + "-" + profile;
-
             # From https://discourse.nixos.org/t/rust-src-not-found-and-other-misadventures-of-developing-rust-on-nixos/11570/11
             path = "${rust}/lib/rustlib/src/rust/library";
-
             drvs = [
-              pkgs.just
-              pkgs.openssl
-              pkgs.pkgconfig
-              pkgs.rust-analyzer
+              rust-analyzer
               rust
             ];
-          }) {
-          version = "stable";
-          profile = "default";
-        };
+          };
+
+        clang-wasi32 = pkgs.writeShellScriptBin "clang-wasi32" ''
+          ${pkgs.pkgsCross.wasi32.buildPackages.llvmPackages.clang-unwrapped}/bin/clang $@
+        '';
+
+        just-watch = pkgs.writeShellScriptBin "just-watch" ''
+          list-files() {
+            cat <(git ls-files) <(git ls-files --others --exclude-standard) 
+          }
+          list-files | ${pkgs.entr}/bin/entr -r ${pkgs.just}/bin/just $@
+        '';
+
       in
       with pkgs;
-
       {
-        devShells.default = mkShell {
-          buildInputs = [
-            # openssl
-            # pkg-config
+        devShell = mkShell {
+          nativeBuildInputs = [
+            # Web stuff:
+            nodejs-18_x
+
+            # General dev stuff:
+            just
+            just-watch
+            entr
+
+            # Rust:
             rustInfo.drvs
             rustfmt
-            nodejs-18_x
-            entr
-            emscripten
-            llvmPackages_14.clang
+
+            # Tree-sitter:
             tree-sitter
             graphviz
+
+            # Wasm cross-compilation:
+            wasm-pack
+            wasm-bindgen-cli
+            lld
+            llvmPackages.llvm
+            llvmPackages.clang
+            clang-wasi32
           ];
           shellHook = ''
             export PATH=$(pwd)/puddlejumper/target/release:$PATH
