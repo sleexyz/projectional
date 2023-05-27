@@ -1,11 +1,9 @@
 @test:
     cargo test --features native
 
-set positional-arguments
-
 [no-cd]
 @run *args='': (build "--features native")
-    exec "{{justfile_directory()}}/target/debug/$(basename {{justfile_directory()}})" $@
+    exec "{{justfile_directory()}}/target/debug/$(basename {{justfile_directory()}})" {{args}}
 
 @build *args='':
-    cargo build $@
+    cargo build {{args}}

@@ -6,4 +6,4 @@ generate:
 
 
 @build *args='':
-    cargo build $@
+    cargo build {{args}}
