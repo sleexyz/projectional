@@ -1,3 +1,4 @@
+
 list:
     #!/usr/bin/env just _recurse bash
     echo "$DIR":
@@ -7,10 +8,11 @@ test: (_recurse_subcommand "test")
 
 _recurse_subcommand command:
     #!/usr/bin/env just _recurse bash
+    set -Eeuo pipefail
     if [[ "$DIR" == "." ]]; then
         exit 0
     fi
-    if ! just -l | grep -q "{{command}}$"; then
+    if ! just -l | grep -q '{{command}}$'; then
         exit 0
     fi
     echo "$DIR":
@@ -18,8 +20,9 @@ _recurse_subcommand command:
 
 _recurse shell script_file:
     #!/bin/bash
+    set -Eeuo pipefail
     file_paths() {
-        cat <(ag -l -G "Justfile$" .) | sort
+        ag -l -G 'Justfile$' . | sort
     }
     while IFS= read -r file_path; do
         export DIR=$(dirname $file_path)

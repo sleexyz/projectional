@@ -38,11 +38,13 @@
           ${pkgs.pkgsCross.wasi32.buildPackages.llvmPackages.clang-unwrapped}/bin/clang $@
         '';
 
-        just-watch = pkgs.writeShellScriptBin "just-watch" ''
+        just-watch = pkgs.writeScriptBin "just-watch" ''
+          #!/usr/bin/env bash
           list-files() {
             cat <(git ls-files) <(git ls-files --others --exclude-standard) 
           }
-          list-files | ${pkgs.entr}/bin/entr -r ${pkgs.just}/bin/just $@
+          # NOTE: we cannot use `-r` because it doesn't work with ag.
+          list-files | ${pkgs.entr}/bin/entr -cs "${pkgs.just}/bin/just $@"
         '';
 
       in
@@ -57,6 +59,7 @@
             just
             just-watch
             entr
+            silver-searcher
 
             # Rust:
             rustInfo.drvs
