@@ -1,10 +1,12 @@
+# NOTE: setting positional args will cause script to go in infinite loop
 
 list:
     #!/usr/bin/env just _recurse bash
     echo "$DIR":
     just -l | tail -n +2
 
-test: (_recurse_subcommand "test")
+test directory=".": 
+    BASE_DIR="{{directory}}" just _recurse_subcommand "test"
 
 _recurse_subcommand command:
     #!/usr/bin/env just _recurse bash
@@ -15,14 +17,15 @@ _recurse_subcommand command:
     if ! just -l | grep -q '{{command}}$'; then
         exit 0
     fi
-    echo "$DIR":
+    echo "command: $DIR {{command}}"
     just {{command}} |& pr -to 4
 
 _recurse shell script_file:
     #!/bin/bash
     set -Eeuo pipefail
+    BASE_DIR=$(realpath "${BASE_DIR:-.}")
     file_paths() {
-        ag -l -G 'Justfile$' . | sort
+        ag -l -g 'Justfile$' "$BASE_DIR" | sort
     }
     while IFS= read -r file_path; do
         export DIR=$(dirname $file_path)
