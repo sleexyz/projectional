@@ -7,13 +7,14 @@ edition = "2018"
 id-arena = "2.2.1"
 log = "0.4.17"
 serde_json = "1.0.96"
-tree-sitter-puddlejumper = { version = "0.0.1", path = "../tree-sitter-puddlejumper", features = [] }
+tree-sitter-puddlejumper = { version = "0.0.1", path = "../tree-sitter-puddlejumper", default-features = false }
 tree-sitter = { version = ">= 0.19, < 0.21", optional = true }
 tree-sitter-c2rust = { version = ">= 0.19, < 0.21", optional = true }
 
 [build-dependencies]
-cc="*"
+cc = "*"
 
 [features]
+default = ["native"]
 native = ["dep:tree-sitter", "tree-sitter-puddlejumper/native"]
 wasm = ["dep:tree-sitter-c2rust", "tree-sitter-puddlejumper/wasm"]

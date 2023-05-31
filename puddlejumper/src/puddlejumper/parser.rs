@@ -11,8 +11,6 @@ use tree_sitter;
 #[cfg(feature = "wasm")]
 use tree_sitter_c2rust as tree_sitter;
 
-// use tree_sitter_c2rust as tree_sitter;
-
 pub struct Parser {
 
     pub parser: tree_sitter::Parser,

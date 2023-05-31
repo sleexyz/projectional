@@ -21,7 +21,7 @@ lto = true
 #default = ["wee_alloc"]
 
 [dependencies]
-puddlejumper = { version = "0.0.1", path = "../puddlejumper", features = ["wasm"] }
+puddlejumper = { version = "0.0.1", path = "../puddlejumper", features = ["wasm"], default-features = false }
 
 # The `wasm-bindgen` crate provides the bare minimum functionality needed
 # to interact with JavaScript.
