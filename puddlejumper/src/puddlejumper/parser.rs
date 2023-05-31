@@ -207,6 +207,9 @@ fn pretty_print(
             write_indent(out, indent_level)?;
             should_indent = false;
             write!(out, "{}", &code[n.start_byte()..n.end_byte()])?;
+            if n.parent().unwrap().kind() == "block" {
+                write!(out, "\n")?;
+            }
         }
         if n.kind() == "content" || n.kind() == "ref" {
             if should_indent {
