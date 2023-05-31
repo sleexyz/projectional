@@ -3,8 +3,10 @@
 
 list:
     #!/usr/bin/env just _recurse bash
-    echo "$DIR":
-    just -l | tail -n +2
+    YELLOW='\033[1;33m'
+    CLEAR='\033[0m'
+    echo -e "${YELLOW}$DIR${CLEAR}"
+    just --summary | pr -to 4
 
 run directory="." *args="":
     BASE_DIR="{{directory}}" just _recurse_subcommand "run" {{args}}
@@ -32,8 +34,7 @@ _recurse_subcommand command *args='':
 _recurse shell script_file:
     #!/bin/bash
     set -Eeuo pipefail
-    ORIG_BASE_DIR=$BASE_DIR
-    BASE_DIR=$(realpath "${BASE_DIR:-.}")
+    BASE_DIR="${BASE_DIR:-.}"
     file_paths=$(ag -l -g 'Justfile$' "$BASE_DIR" | sort)
     matches=0
     while IFS= read -r file_path; do
