@@ -1,6 +1,6 @@
 {
-  "name": "projectional",
-  "displayName": "projectional",
+  "name": "puddlejumper",
+  "displayName": "puddlejumper",
   "description": "",
   "version": "0.0.1",
   "engines": {
@@ -12,9 +12,29 @@
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "puddlejumper",
+          "title": "Puddlejumper",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "puddlejumper": [
+        {
+          "type": "webview",
+          "id": "puddlejumper.puddlejumperView",
+          "name": "Puddlejumper",
+          "icon": "media/icon.svg",
+          "contextualTitle": "Puddlejumper"
+        }
+      ]
+    },
     "commands": [
       {
-        "command": "projectional.helloWorld",
+        "command": "puddlejumper.helloWorld",
         "title": "Hello World"
       }
     ]
