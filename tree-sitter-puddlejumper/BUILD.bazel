@@ -1,0 +1,14 @@
+load("//:coarse.bzl", "dir", "dir_test")
+
+package(default_visibility = ["//visibility:public"])
+
+dir(
+    name = "tree-sitter-puddlejumper",
+    exclude = [
+        ".gitignore",
+        "node_modules/**/*",
+        "target/**/*",
+        "test/**/*",
+    ],
+    build = "cargo build --release",
+)
