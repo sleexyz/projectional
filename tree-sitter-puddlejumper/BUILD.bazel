@@ -1,14 +1,17 @@
-load("//:coarse.bzl", "dir", "dir_test")
+load("//:coarse.bzl", "dir_rule")
 
 package(default_visibility = ["//visibility:public"])
 
-dir(
+dir_rule(
     name = "tree-sitter-puddlejumper",
-    exclude = [
-        ".gitignore",
-        "node_modules/**/*",
-        "target/**/*",
-        "test/**/*",
-    ],
-    build = "cargo build --release",
+    srcs = glob(
+        ["**/*"],
+        exclude = [
+            ".gitignore",
+            "node_modules/**/*",
+            "target/**/*",
+            "test/**/*",
+        ],
+    ),
+    build_cmd = "cargo build --release",
 )
