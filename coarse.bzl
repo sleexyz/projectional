@@ -1,24 +1,28 @@
 """
 TODO: work with transitive deps
 """
-
 def _dir_rule_impl(ctx):
-    output = ctx.actions.declare_file("%s.dir.tar" % ctx.attr.name)
-    tars = []
+    output = ctx.actions.declare_directory(ctx.attr.name)
+    dep_dirs = []
     transitive = []
     for dep in ctx.attr.deps:
         transitive.append(dep.files)
         for file in dep.files.to_list():
-            tars.append(file.path)
+            dep_dirs.append(file.path)
 
     command = '''
-    for tar in "{tars}"; do
-        tar -xf $tar
+    set -ex
+    OUTPUT_ROOT=$(dirname {output})
+    for dir in "{dep_dirs}"; do
+        if [ -z "$dir" ]; then
+            continue
+        fi
+        ln -s "$(realpath $dir)" "$OUTPUT_ROOT/$(basename $dir)"
     done
-    (cd {name}; {build_cmd})
-    tar -cf {output} {name}
+    mv {name}/* {output}
+    (cd {output}; {build_cmd})
     '''.format(
-        tars = " ".join(tars),
+        dep_dirs = " ".join(dep_dirs),
         name = ctx.attr.name,
         build_cmd = ctx.attr.build_cmd,
         output = output.path,
@@ -39,6 +43,5 @@ dir_rule = rule(
         "build_cmd": attr.string(),
         "srcs": attr.label_list(allow_files = True),
         "deps": attr.label_list(allow_files = True),
-        "exclude": attr.string_list(default = []),
     },
 )
