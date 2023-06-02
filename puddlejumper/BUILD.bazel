@@ -1,0 +1,13 @@
+load("//:coarse.bzl", "dir")
+
+dir(
+    name = "puddlejumper",
+    build = "cargo build --release",
+    deps = [
+        "//tree-sitter-puddlejumper"
+    ],
+    exclude = [
+        "target/**/*",
+        ".gitignore"
+    ],
+)
