@@ -1,13 +1,17 @@
-load("//:coarse.bzl", "dir")
+load("//:coarse.bzl", "dir_rule")
 
-dir(
+dir_rule(
     name = "puddlejumper",
-    build = "cargo build --release",
+    srcs = glob(
+        ["**/*"],
+        exclude = [
+            "BUILD.bazel",
+            "target/**/*",
+            ".gitignore",
+        ],
+    ),
+    build_cmd = "cargo build --release",
     deps = [
-        "//tree-sitter-puddlejumper"
-    ],
-    exclude = [
-        "target/**/*",
-        ".gitignore"
+        "//tree-sitter-puddlejumper",
     ],
 )
