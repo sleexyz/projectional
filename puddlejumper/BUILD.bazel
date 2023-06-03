@@ -1,9 +1,10 @@
-load("//:coarse.bzl", "dir", "dir_test")
+load("//:coarse.bzl", "base_dir", "dir_overlay", "dir_test")
 
 package(default_visibility = ["//visibility:public"])
 
-dir(
-    name = "puddlejumper",
+base_dir(
+    name = "sources",
+    path = "puddlejumper",
     srcs = glob(
         ["**/*"],
         exclude = [
@@ -12,14 +13,25 @@ dir(
             ".gitignore",
         ],
     ),
+)
+
+dir_overlay(
+    name = "build",
     cmd = "cargo build",
+    dir = ":sources",
     deps = [
-        "//tree-sitter-puddlejumper",
+        "//tree-sitter-puddlejumper:build",
     ],
+)
+
+dir_overlay(
+    name = "test_lib",
+    cmd = "cargo test --no-run",
+    dir = ":build",
 )
 
 dir_test(
     name = "test",
     cmd = "cargo test",
-    dir = ":puddlejumper",
+    dir = ":test_lib",
 )
