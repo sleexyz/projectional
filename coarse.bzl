@@ -1,7 +1,8 @@
 """
 TODO: work with transitive deps
 """
-def _dir_rule_impl(ctx):
+
+def _dir_impl(ctx):
     output = ctx.actions.declare_directory(ctx.attr.name)
     dep_dirs = []
     transitive = []
@@ -11,7 +12,6 @@ def _dir_rule_impl(ctx):
             dep_dirs.append(file.path)
 
     command = '''
-    set -ex
     OUTPUT_ROOT=$(dirname {output})
     for dir in "{dep_dirs}"; do
         if [ -z "$dir" ]; then
@@ -20,11 +20,11 @@ def _dir_rule_impl(ctx):
         ln -s "$(realpath $dir)" "$OUTPUT_ROOT/$(basename $dir)"
     done
     mv {name}/* {output}
-    (cd {output}; {build_cmd})
+    (cd {output}; {cmd})
     '''.format(
         dep_dirs = " ".join(dep_dirs),
         name = ctx.attr.name,
-        build_cmd = ctx.attr.build_cmd,
+        cmd = ctx.attr.cmd,
         output = output.path,
     ).strip()
 
@@ -35,13 +35,72 @@ def _dir_rule_impl(ctx):
         use_default_shell_env = True,
     )
 
-    return DefaultInfo(files = depset([output]))
+    runfiles = ctx.runfiles(
+        root_symlinks = {
+            ctx.attr.name: output,
+        },
+    )
+    runfiles = ctx.runfiles(
+        root_symlinks = depset(
+            direct = runfiles.root_symlinks.to_list(),
+            transitive = [
+                dep[DefaultInfo].default_runfiles.root_symlinks
+                for dep in ctx.attr.deps
+            ],
+        ),
+    )
 
-dir_rule = rule(
-    implementation = _dir_rule_impl,
+    return [
+        DefaultInfo(
+            files = depset([output]),
+            runfiles = runfiles,
+        ),
+        DirInfo(path = ctx.attr.name),
+    ]
+
+dir = rule(
+    implementation = _dir_impl,
     attrs = {
-        "build_cmd": attr.string(),
+        "cmd": attr.string(),
         "srcs": attr.label_list(allow_files = True),
         "deps": attr.label_list(allow_files = True),
+    },
+)
+
+DirInfo = provider(
+    fields = {
+        "path": "path to the directory from workspace root",
+    },
+)
+
+def _test_command_impl(ctx):
+    output = ctx.actions.declare_file("%s.sh" % ctx.attr.name)
+
+    runfiles = ctx.runfiles(
+        root_symlinks = depset(
+            transitive = [ctx.attr.dir[DefaultInfo].default_runfiles.root_symlinks],
+        ),
+    )
+
+    command = """
+    (cd $RUNFILES_DIR/{dir_path}; {cmd})
+    """.format(
+        dir_path = ctx.attr.dir[DirInfo].path,
+        cmd = ctx.attr.cmd,
+    ).strip()
+
+    ctx.actions.write(
+        output = output,
+        content = command,
+    )
+
+    return DefaultInfo(executable = output, runfiles = runfiles)
+
+dir_test = rule(
+    implementation = _test_command_impl,
+    test = True,
+    attrs = {
+        "cmd": attr.string(),
+        "dir": attr.label(allow_files = True),
     },
 )

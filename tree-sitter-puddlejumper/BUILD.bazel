@@ -1,8 +1,8 @@
-load("//:coarse.bzl", "dir_rule")
+load("//:coarse.bzl", "dir")
 
 package(default_visibility = ["//visibility:public"])
 
-dir_rule(
+dir(
     name = "tree-sitter-puddlejumper",
     srcs = glob(
         ["**/*"],
@@ -13,5 +13,5 @@ dir_rule(
             "test/**/*",
         ],
     ),
-    build_cmd = "cargo build --release",
+    cmd = "cargo build",
 )
