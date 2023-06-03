@@ -1,25 +1,28 @@
-"""
-TODO: work with transitive deps
-"""
-
 def _dir_impl(ctx):
+    """
+    TODO: support directories of arbitrary depth
+    """
     output = ctx.actions.declare_directory(ctx.attr.name)
-    dep_dirs = []
-    transitive = []
-    for dep in ctx.attr.deps:
-        transitive.append(dep.files)
-        for file in dep.files.to_list():
-            dep_dirs.append(file.path)
+    transitive_depsets = [
+        dep[DirInfo].transitive_sources
+        for dep in ctx.attr.deps
+    ]
+    dep_dirs = [
+        file.path
+        for file in depset(transitive = transitive_depsets).to_list()
+    ]
 
     command = '''
     OUTPUT_ROOT=$(dirname {output})
-    for dir in "{dep_dirs}"; do
+    dep_dirs="{dep_dirs}"
+    for dir in $dep_dirs; do
         if [ -z "$dir" ]; then
             continue
         fi
         ln -s "$(realpath $dir)" "$OUTPUT_ROOT/$(basename $dir)"
     done
     mv {name}/* {output}
+
     (cd {output}; {cmd})
     '''.format(
         dep_dirs = " ".join(dep_dirs),
@@ -29,7 +32,7 @@ def _dir_impl(ctx):
     ).strip()
 
     ctx.actions.run_shell(
-        inputs = depset(direct = ctx.files.srcs, transitive = transitive),
+        inputs = depset(direct = ctx.files.srcs, transitive = transitive_depsets),
         outputs = [output],
         command = command,
         use_default_shell_env = True,
@@ -55,7 +58,10 @@ def _dir_impl(ctx):
             files = depset([output]),
             runfiles = runfiles,
         ),
-        DirInfo(path = ctx.attr.name),
+        DirInfo(
+            path = ctx.attr.name,
+            transitive_sources = depset([output], transitive = transitive_depsets),
+        ),
     ]
 
 dir = rule(
@@ -70,6 +76,7 @@ dir = rule(
 DirInfo = provider(
     fields = {
         "path": "path to the directory from workspace root",
+        "transitive_sources": "transitive sources",
     },
 )
 

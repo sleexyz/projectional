@@ -1,5 +1,7 @@
 load("//:coarse.bzl", "dir", "dir_test")
 
+package(default_visibility = ["//visibility:public"])
+
 dir(
     name = "puddlejumper",
     srcs = glob(
@@ -19,6 +21,5 @@ dir(
 dir_test(
     name = "test",
     cmd = "cargo test",
-    data = [":test_lib"],
     dir = ":puddlejumper",
 )

@@ -1,0 +1,16 @@
+load("//:coarse.bzl", "dir", "dir_test")
+
+dir(
+    name = "my-app",
+    srcs = glob(
+        [
+            "src/**/*",
+            "Cargo.lock",
+            "Cargo.toml",
+        ],
+    ),
+    cmd = "cargo build",
+    deps = [
+        "//puddlejumper",
+    ],
+)
