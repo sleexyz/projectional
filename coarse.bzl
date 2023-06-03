@@ -82,9 +82,18 @@ def _test_command_impl(ctx):
         ),
     )
 
-    command = """
+    command = '''
+    if [[ {read_only} == "False" ]]; then
+      # Replace with a writeable copy of the directory
+      cp -Lr $RUNFILES_DIR/{dir_path} $TEST_TMPDIR/{dir_path}
+      chmod -R u+w $TEST_TMPDIR/{dir_path}
+      rm -rf $RUNFILES_DIR/{dir_path}
+      mv $TEST_TMPDIR/{dir_path} $RUNFILES_DIR/{dir_path}
+    fi
+
     (cd $RUNFILES_DIR/{dir_path}; {cmd})
-    """.format(
+    '''.format(
+        read_only = ctx.attr.read_only,
         dir_path = ctx.attr.dir[DirInfo].path,
         cmd = ctx.attr.cmd,
     ).strip()
@@ -100,6 +109,7 @@ dir_test = rule(
     implementation = _test_command_impl,
     test = True,
     attrs = {
+        "read_only": attr.bool(default = False),
         "cmd": attr.string(),
         "dir": attr.label(allow_files = True),
     },
