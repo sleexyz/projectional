@@ -1,9 +1,10 @@
-load("//:coarse.bzl", "dir")
+load("//:coarse.bzl", "base_dir", "dir_overlay")
 
 package(default_visibility = ["//visibility:public"])
 
-dir(
-    name = "tree-sitter-puddlejumper",
+base_dir(
+    name = "sources",
+    path = "tree-sitter-puddlejumper",
     srcs = glob(
         ["**/*"],
         exclude = [
@@ -13,5 +14,10 @@ dir(
             "test/**/*",
         ],
     ),
+)
+
+dir_overlay(
+    name = "build",
     cmd = "cargo build",
+    dir = ":sources",
 )
