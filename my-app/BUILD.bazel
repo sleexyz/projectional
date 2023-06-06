@@ -1,12 +1,12 @@
-load("//:coarse.bzl", "base_dir", "step")
+load("//:coarse.bzl", "dir", "dir_step")
 load("//:cargo.bzl", "cargo_build_env")
 
-base_dir(
+dir(
     name = "sources",
     path = "my-app",
 )
 
-step(
+dir_step(
     name = "npm_install",
     srcs = [
         "package.json",
@@ -16,7 +16,7 @@ step(
     prev = ":sources",
 )
 
-step(
+dir_step(
     name = "cargo_build",
     srcs = glob([
         "src/**/*",
@@ -34,7 +34,7 @@ step(
     ],
 )
 
-step(
+dir_step(
     name = "build",
     srcs = glob([
         "js/**/*",
