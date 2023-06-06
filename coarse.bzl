@@ -63,7 +63,7 @@ def _dir_test_impl(ctx):
 
     runfiles = ctx.runfiles(
         root_symlinks = depset(
-            transitive = [ctx.attr.dir[DefaultInfo].default_runfiles.root_symlinks],
+            transitive = [ctx.attr.prev[DefaultInfo].default_runfiles.root_symlinks],
         ),
     )
 
@@ -75,7 +75,7 @@ def _dir_test_impl(ctx):
     (cd $RUNFILES_DIR/{dir_path}; {cmd})
     """.format(
         read_only = ctx.attr.read_only,
-        dir_path = ctx.attr.dir[DirInfo].path,
+        dir_path = ctx.attr.prev[DirInfo].path,
         cmd = ctx.attr.cmd,
     ).strip()
 
@@ -95,27 +95,27 @@ _dir_test = rule(
     implementation = _dir_test_impl,
     test = True,
     attrs = {
-        "dir": attr.label(allow_files = True),
+        "prev": attr.label(allow_files = True),
         "cmd": attr.string(),
         "read_only": attr.bool(default = False),
         "env_inherit": attr.string_list(),
     },
 )
 
-def dir_test(name, dir, cmd, srcs = [], **kwargs):
+def dir_test(name, prev, cmd, srcs = [], **kwargs):
     if (len(srcs) > 0):
         step(
             name = "%s_lib" % name,
-            dir = dir,
+            prev = prev,
             cmd = "true",
             srcs = srcs,
         )
-        dir = "%s_lib" % name
+        prev = "%s_lib" % name
 
     _dir_test(
         name = name,
         cmd = cmd,
-        dir = dir,
+        prev = prev,
         **kwargs
     )
 
@@ -123,8 +123,8 @@ def _step_impl(ctx):
     """
     A rule that overlays a directory on top of another directory.
     """
-    dir_path = ctx.attr.dir[DirInfo].path
-    last_overlay_index = ctx.attr.dir[DirInfo].last_overlay_index
+    dir_path = ctx.attr.prev[DirInfo].path
+    last_overlay_index = ctx.attr.prev[DirInfo].last_overlay_index
     output_dir = "__overlays__/%s_%s.tar" % (last_overlay_index + 1, ctx.attr.name)
     output = ctx.actions.declare_file(output_dir)
 
@@ -139,7 +139,7 @@ def _step_impl(ctx):
         dep[DirInfo].transitive_deps_files
         for dep in ctx.attr.deps
     ] + [
-        ctx.attr.dir[DirInfo].transitive_deps_files,
+        ctx.attr.prev[DirInfo].transitive_deps_files,
     ]
 
     dep_dirs = [
@@ -175,7 +175,7 @@ def _step_impl(ctx):
     tar -C $OUTPUT_ROOT -cf {output} {dir_path}
     exit $CODE
     '''.format(
-        last_overlay = ctx.attr.dir[DirInfo].last_overlay,
+        last_overlay = ctx.attr.prev[DirInfo].last_overlay,
         last_overlay_index = last_overlay_index,
         dep_dirs = " ".join(dep_dirs),
         dir_path = dir_path,
@@ -191,7 +191,7 @@ def _step_impl(ctx):
     )
 
     inputs = depset(
-        direct = ctx.attr.dir[DefaultInfo].files.to_list() + [script] + ctx.files.srcs,
+        direct = ctx.attr.prev[DefaultInfo].files.to_list() + [script] + ctx.files.srcs,
         transitive = transitive_depsets,
     )
 
@@ -205,7 +205,7 @@ def _step_impl(ctx):
 
     runfiles = ctx.runfiles(
         root_symlinks = {
-            "%s.tar" % ctx.attr.dir[DirInfo].path: output,
+            "%s.tar" % ctx.attr.prev[DirInfo].path: output,
         },
     )
     transitive_runfiles = ctx.runfiles(
@@ -215,7 +215,7 @@ def _step_impl(ctx):
                 dep[DefaultInfo].default_runfiles.root_symlinks
                 for dep in ctx.attr.deps
             ] + [
-                ctx.attr.dir[DefaultInfo].default_runfiles.root_symlinks,
+                ctx.attr.prev[DefaultInfo].default_runfiles.root_symlinks,
             ],
         ),
     )
@@ -228,7 +228,7 @@ def _step_impl(ctx):
             runfiles = transitive_runfiles,
         ),
         DirInfo(
-            path = ctx.attr.dir[DirInfo].path,
+            path = ctx.attr.prev[DirInfo].path,
             last_overlay = ctx.attr.name,
             last_overlay_index = last_overlay_index + 1,
             transitive_deps_files = transitive_deps_files,
@@ -240,7 +240,7 @@ _step = rule(
     implementation = _step_impl,
     attrs = {
         "cmd": attr.string(),
-        "dir": attr.label(allow_files = True),
+        "prev": attr.label(allow_files = True),
         "srcs": attr.label_list(allow_files = True),
         "deps": attr.label_list(allow_files = True),
         "env": attr.string_dict(),
@@ -248,31 +248,31 @@ _step = rule(
 )
 
 def _remove_transitive_deps_impl(ctx):
-    dir = ctx.attr.dir
+    prev = ctx.attr.prev
     return [
         DefaultInfo(
-            files = dir[DefaultInfo].files,
+            files = prev[DefaultInfo].files,
             # Remove transitive runfiles
-            runfiles = dir[DirInfo].non_transitive_runfiles,
+            runfiles = prev[DirInfo].non_transitive_runfiles,
         ),
         DirInfo(
-            path = dir[DirInfo].path,
-            last_overlay = dir[DirInfo].last_overlay,
-            last_overlay_index = dir[DirInfo].last_overlay_index,
+            path = prev[DirInfo].path,
+            last_overlay = prev[DirInfo].last_overlay,
+            last_overlay_index = prev[DirInfo].last_overlay_index,
             # Remove transitive deps
             transitive_deps_files = depset(),
-            non_transitive_runfiles = dir[DirInfo].non_transitive_runfiles,
+            non_transitive_runfiles = prev[DirInfo].non_transitive_runfiles,
         ),
     ]
 
 _remove_transitive_deps = rule(
     implementation = _remove_transitive_deps_impl,
     attrs = {
-        "dir": attr.label(allow_files = True),
+        "prev": attr.label(allow_files = True),
     },
 )
 
 def step(name, **kwargs):
     transitive_label = "%s.transitive" % name
-    _remove_transitive_deps(name = name, dir = transitive_label)
+    _remove_transitive_deps(name = name, prev = transitive_label)
     _step(name = transitive_label, **kwargs)
