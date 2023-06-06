@@ -3,13 +3,6 @@ load("//:cargo.bzl", "cargo_build_env")
 
 base_dir(
     name = "sources",
-    srcs = glob(
-        [
-            "src/**/*",
-            "Cargo.lock",
-            "Cargo.toml",
-        ],
-    ),
     path = "my-app",
 )
 
@@ -24,6 +17,21 @@ dir_overlay(
 )
 
 dir_overlay(
+    name = "cargo_build",
+    cmd = "cargo build",
+    dir = ":sources",
+    srcs = glob([
+        "src/**/*",
+        "Cargo.lock",
+        "Cargo.toml",
+    ]),
+    env = cargo_build_env,
+    deps = [
+        "//puddlejumper:build",
+    ],
+)
+
+dir_overlay(
     name = "build",
     srcs = glob([
         "js/**/*",
@@ -32,16 +40,6 @@ dir_overlay(
         "tsconfig.node.json",
         "tsconfig.json",
     ]),
-    cmd = "readlink node_modules/.bin/tsc",
+    cmd = "npm run build",
     dir = ":npm_install",
 )
-
-# dir_overlay(
-#     name = "build",
-#     cmd = "cargo build",
-#     dir = ":sources",
-#     env = cargo_build_env,
-#     deps = [
-#         "//puddlejumper:build",
-#     ],
-# )

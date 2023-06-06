@@ -6,6 +6,7 @@ def _base_dir_impl(ctx):
     output = ctx.actions.declare_file(output_dir)
 
     command = """
+    mkdir -p {path}
     tar -cf {output} {path}
     """.format(
         path = ctx.attr.path,
