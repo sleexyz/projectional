@@ -2,11 +2,11 @@ def _base_dir_impl(ctx):
     """
     TODO: support directories of arbitrary depth
     """
-    output_dir = "__overlays__/%s_%s" % (0, ctx.attr.name)
-    output = ctx.actions.declare_directory(output_dir)
+    output_dir = "__overlays__/%s_%s.tar" % (0, ctx.attr.name)
+    output = ctx.actions.declare_file(output_dir)
 
     command = """
-    mv {path}/* {output}
+    tar -cf {output} {path}
     """.format(
         path = ctx.attr.path,
         output = output.path,
@@ -21,7 +21,7 @@ def _base_dir_impl(ctx):
 
     runfiles = ctx.runfiles(
         root_symlinks = {
-            ctx.attr.path: output,
+            "%s.tar" % ctx.attr.path: output,
         },
     )
 
@@ -64,17 +64,13 @@ def _dir_test_impl(ctx):
         ),
     )
 
-    command = '''
-    if [[ {read_only} == "False" ]]; then
-      # Replace with a writeable copy of the directory
-      cp -Lr $RUNFILES_DIR/{dir_path} $TEST_TMPDIR/{dir_path}
-      chmod -R u+w $TEST_TMPDIR/{dir_path}
-      rm -rf $RUNFILES_DIR/{dir_path}
-      mv $TEST_TMPDIR/{dir_path} $RUNFILES_DIR/{dir_path}
-    fi
+    command = """
+    for file in $RUNFILES_DIR/*.tar; do
+        tar -C $RUNFILES_DIR -xf $file
+    done
 
     (cd $RUNFILES_DIR/{dir_path}; {cmd})
-    '''.format(
+    """.format(
         read_only = ctx.attr.read_only,
         dir_path = ctx.attr.dir[DirInfo].path,
         cmd = ctx.attr.cmd,
@@ -126,8 +122,8 @@ def _dir_overlay_impl(ctx):
     """
     dir_path = ctx.attr.dir[DirInfo].path
     last_overlay_index = ctx.attr.dir[DirInfo].last_overlay_index
-    output_dir = "__overlays__/%s_%s" % (last_overlay_index + 1, ctx.attr.name)
-    output = ctx.actions.declare_directory(output_dir)
+    output_dir = "__overlays__/%s_%s.tar" % (last_overlay_index + 1, ctx.attr.name)
+    output = ctx.actions.declare_file(output_dir)
 
     script = ctx.actions.declare_file("%s.sh" % ctx.attr.name)
 
@@ -156,25 +152,22 @@ def _dir_overlay_impl(ctx):
             continue
         fi
 
-        # TODO: support package names of arbitrary depth
-        package_name=$(basename $(dirname $(dirname $dir)))
-        ln -s "$(realpath $dir)" "$OUTPUT_ROOT/$package_name"
+        echo "dir: $dir"
+        tar -xf $dir -C $OUTPUT_ROOT
     done
 
-    cp -Lr $OUTPUT_ROOT/__overlays__/{last_overlay_index}_{last_overlay} $OUTPUT_ROOT/{dir_path}
-    chmod -R u+w $OUTPUT_ROOT/{dir_path}
+    tar -xf $OUTPUT_ROOT/__overlays__/{last_overlay_index}_{last_overlay}.tar -C $OUTPUT_ROOT/
 
     if [[ -d {dir_path} ]]; then
-        cp -Lr {dir_path}/* $OUTPUT_ROOT/{dir_path}
+        cp -r {dir_path}/* $OUTPUT_ROOT/{dir_path}
     fi
 
     script_path=$(realpath {script_path})
 
     set +e
     (cd $OUTPUT_ROOT/{dir_path}; exec $script_path)
-
     set -e
-    mv $OUTPUT_ROOT/{dir_path}/* {output}
+    tar -C $OUTPUT_ROOT -cf {output} {dir_path}
     '''.format(
         last_overlay = ctx.attr.dir[DirInfo].last_overlay,
         last_overlay_index = last_overlay_index,
@@ -206,7 +199,7 @@ def _dir_overlay_impl(ctx):
 
     runfiles = ctx.runfiles(
         root_symlinks = {
-            ctx.attr.dir[DirInfo].path: output,
+            "%s.tar" % ctx.attr.dir[DirInfo].path: output,
         },
     )
     runfiles = ctx.runfiles(
