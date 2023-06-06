@@ -1,22 +1,3 @@
-//! This crate provides puddlejumper language support for the [tree-sitter][] parsing library.
-//!
-//! Typically, you will use the [language][language func] function to add this language to a
-//! tree-sitter [Parser][], and then use the parser to parse some code:
-//!
-//! ```
-//! use tree_sitter_c2rust as tree_sitter;
-//! let code = "";
-//! let mut parser = tree_sitter::Parser::new();
-//! parser.set_language(tree_sitter_puddlejumper::language()).expect("Error loading puddlejumper grammar");
-//! let tree = parser.parse(code, None).unwrap();
-//! ```
-//!
-//! [Language]: https://docs.rs/tree-sitter/*/tree_sitter/struct.Language.html
-//! [language func]: fn.language.html
-//! [Parser]: https://docs.rs/tree-sitter/*/tree_sitter/struct.Parser.html
-//! [tree-sitter]: https://tree-sitter.github.io/
-
-
 #[cfg(all(feature = "native", feature = "wasm"))]
 compile_error!("feature \"native\" and feature \"wasm\" cannot be enabled at the same time");
 

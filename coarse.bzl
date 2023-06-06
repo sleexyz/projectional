@@ -2,15 +2,14 @@ def _base_dir_impl(ctx):
     """
     TODO: support directories of arbitrary depth
     """
-    output_dir = "__overlays__/%s" % ctx.attr.name
+    output_dir = "__overlays__/%s_%s" % (0, ctx.attr.name)
     output = ctx.actions.declare_directory(output_dir)
 
     command = """
     mv {path}/* {output}
     """.format(
-        path= ctx.attr.path,
+        path = ctx.attr.path,
         output = output.path,
-        output_root = output.path[:-(len(output_dir) + 1)],
     ).strip()
 
     ctx.actions.run_shell(
@@ -22,7 +21,7 @@ def _base_dir_impl(ctx):
 
     runfiles = ctx.runfiles(
         root_symlinks = {
-            ctx.attr.name: output,
+            ctx.attr.path: output,
         },
     )
 
@@ -33,6 +32,7 @@ def _base_dir_impl(ctx):
         ),
         DirInfo(
             last_overlay = ctx.attr.name,
+            last_overlay_index = 0,
             path = ctx.attr.path,
             transitive_deps_sources = depset([]),
         ),
@@ -51,10 +51,11 @@ DirInfo = provider(
         "path": "path to the directory from workspace root",
         "transitive_deps_sources": "transitive sources",
         "last_overlay": "the last overlay applied to this directory",
+        "last_overlay_index": "the index of the last overlay",
     },
 )
 
-def _test_command_impl(ctx):
+def _dir_test_impl(ctx):
     output = ctx.actions.declare_file("%s.sh" % ctx.attr.name)
 
     runfiles = ctx.runfiles(
@@ -62,8 +63,6 @@ def _test_command_impl(ctx):
             transitive = [ctx.attr.dir[DefaultInfo].default_runfiles.root_symlinks],
         ),
     )
-
-    print(runfiles.root_symlinks.to_list())
 
     command = '''
     if [[ {read_only} == "False" ]]; then
@@ -86,25 +85,51 @@ def _test_command_impl(ctx):
         content = command,
     )
 
-    return DefaultInfo(executable = output, runfiles = runfiles)
+    return [
+        DefaultInfo(executable = output, runfiles = runfiles),
+        RunEnvironmentInfo(
+            inherited_environment = ctx.attr.env_inherit,
+        ),
+    ]
 
-dir_test = rule(
-    implementation = _test_command_impl,
+_dir_test = rule(
+    implementation = _dir_test_impl,
     test = True,
     attrs = {
-        "read_only": attr.bool(default = False),
-        "cmd": attr.string(),
         "dir": attr.label(allow_files = True),
+        "cmd": attr.string(),
+        "read_only": attr.bool(default = False),
+        "env_inherit": attr.string_list(),
     },
 )
+
+def dir_test(name, dir, cmd, srcs = [], **kwargs):
+    if (len(srcs) > 0):
+        dir_overlay(
+            name = "%s_lib" % name,
+            dir = dir,
+            cmd = "true",
+            srcs = srcs,
+        )
+        dir = "%s_lib" % name
+
+    _dir_test(
+        name = name,
+        cmd = cmd,
+        dir = dir,
+        **kwargs
+    )
 
 def _dir_overlay_impl(ctx):
     """
     A rule that overlays a directory on top of another directory.
     """
     dir_path = ctx.attr.dir[DirInfo].path
-    output_dir = "__overlays__/%s" % ctx.attr.name
+    last_overlay_index = ctx.attr.dir[DirInfo].last_overlay_index
+    output_dir = "__overlays__/%s_%s" % (last_overlay_index + 1, ctx.attr.name)
     output = ctx.actions.declare_directory(output_dir)
+
+    script = ctx.actions.declare_file("%s.sh" % ctx.attr.name)
 
     transitive_depsets = [
         dep[DefaultInfo].files
@@ -121,44 +146,59 @@ def _dir_overlay_impl(ctx):
         for file in depset(transitive = transitive_depsets).to_list()
     ]
 
-    inputs = depset(direct = ctx.attr.dir[DefaultInfo].files.to_list(), transitive = transitive_depsets)
-
     command = '''
     set -e
     OUTPUT_ROOT={output_root}
     dep_dirs="{dep_dirs}"
 
-    yellow='\033[1;33m'
-    clear='\033[0m'
-    debug() {{
-        echo -e "$yellow $@ $clear"
-    }}
-
     for dir in $dep_dirs; do
         if [ -z "$dir" ]; then
             continue
         fi
+
+        # TODO: support package names of arbitrary depth
         package_name=$(basename $(dirname $(dirname $dir)))
-        debug "Linking $dir to $OUTPUT_ROOT/$package_name"
         ln -s "$(realpath $dir)" "$OUTPUT_ROOT/$package_name"
     done
 
-    cp -Lr $OUTPUT_ROOT/__overlays__/{last_overlay} $OUTPUT_ROOT/{dir_path}
+    cp -Lr $OUTPUT_ROOT/__overlays__/{last_overlay_index}_{last_overlay} $OUTPUT_ROOT/{dir_path}
     chmod -R u+w $OUTPUT_ROOT/{dir_path}
 
-    (cd $OUTPUT_ROOT/{dir_path}; {cmd})
+    if [[ -d {dir_path} ]]; then
+        cp -Lr {dir_path}/* $OUTPUT_ROOT/{dir_path}
+    fi
+
+    script_path=$(realpath {script_path})
+
+    set +e
+    (cd $OUTPUT_ROOT/{dir_path}; exec $script_path)
+
+    set -e
     mv $OUTPUT_ROOT/{dir_path}/* {output}
     '''.format(
         last_overlay = ctx.attr.dir[DirInfo].last_overlay,
+        last_overlay_index = last_overlay_index,
         dep_dirs = " ".join(dep_dirs),
         dir_path = dir_path,
-        cmd = ctx.attr.cmd,
+        script_path = script.path,
         output = output.path,
         output_root = output.path[:-(len(output_dir) + 1)],
     ).strip()
 
+    ctx.actions.write(
+        output = script,
+        content = ctx.attr.cmd,
+        is_executable = True,
+    )
+
+    inputs = depset(
+        direct = ctx.attr.dir[DefaultInfo].files.to_list() + [script] + ctx.files.srcs,
+        transitive = transitive_depsets,
+    )
+
     ctx.actions.run_shell(
         inputs = inputs,
+        env = ctx.attr.env,
         outputs = [output],
         command = command,
         use_default_shell_env = True,
@@ -189,6 +229,7 @@ def _dir_overlay_impl(ctx):
         DirInfo(
             path = ctx.attr.dir[DirInfo].path,
             last_overlay = ctx.attr.name,
+            last_overlay_index = last_overlay_index + 1,
             transitive_deps_sources = depset(transitive = transitive_depsets),
         ),
     ]
@@ -200,5 +241,6 @@ dir_overlay = rule(
         "dir": attr.label(allow_files = True),
         "srcs": attr.label_list(allow_files = True),
         "deps": attr.label_list(allow_files = True),
+        "env": attr.string_dict(),
     },
 )
