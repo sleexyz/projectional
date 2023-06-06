@@ -35,5 +35,5 @@ step(
 dir_test(
     name = "test",
     cmd = cargo_with_tree_sitter_features("test"),
-    prev = ":test_lib",
+    prev = ":test_lib.transitive",
 )
