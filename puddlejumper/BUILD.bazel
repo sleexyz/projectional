@@ -1,10 +1,15 @@
-load("//:coarse.bzl", "base_dir", "dir_overlay", "dir_test")
+load("//:coarse.bzl", "base_dir", "dir_test", "step")
 load("//:cargo.bzl", "cargo_build_env", "cargo_with_tree_sitter_features")
 
 package(default_visibility = ["//visibility:public"])
 
 base_dir(
     name = "sources",
+    path = "puddlejumper",
+)
+
+step(
+    name = "build",
     srcs = glob(
         [
             "src/**/*",
@@ -12,11 +17,6 @@ base_dir(
             "Cargo.lock",
         ],
     ),
-    path = "puddlejumper",
-)
-
-dir_overlay(
-    name = "build",
     cmd = cargo_with_tree_sitter_features("build"),
     dir = ":sources",
     env = cargo_build_env,
@@ -25,10 +25,10 @@ dir_overlay(
     ],
 )
 
-dir_overlay(
+step(
     name = "test_lib",
     cmd = cargo_with_tree_sitter_features("test --no-run"),
-    dir = ":build",
+    dir = ":build.transitive",
     env = cargo_build_env,
 )
 

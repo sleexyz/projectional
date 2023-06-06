@@ -1,21 +1,19 @@
-load("//:coarse.bzl", "base_dir", "dir_overlay", "dir_test")
+load("//:coarse.bzl", "base_dir", "dir_test", "step")
 load("//:cargo.bzl", "cargo_build_env", "cargo_with_tree_sitter_features")
 
 package(default_visibility = ["//visibility:public"])
 
 base_dir(
     name = "sources",
-    srcs = [
-        "Cargo.lock",
-        "Cargo.toml",
-        "grammar.js",
-        "src/scanner.cc",
-    ],
     path = "tree-sitter-puddlejumper",
 )
 
-dir_overlay(
+step(
     name = "generate",
+    srcs = [
+        "grammar.js",
+        "src/scanner.cc",
+    ],
     cmd = "tree-sitter generate",
     dir = ":sources",
     env = cargo_build_env,
@@ -34,9 +32,11 @@ dir_test(
     ],
 )
 
-dir_overlay(
+step(
     name = "build",
     srcs = glob([
+        "Cargo.lock",
+        "Cargo.toml",
         "bindings/**/*",
         "binding.gyp",
         "package-lock.json",

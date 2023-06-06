@@ -1,4 +1,4 @@
-load("//:coarse.bzl", "base_dir", "dir_overlay")
+load("//:coarse.bzl", "base_dir", "step")
 load("//:cargo.bzl", "cargo_build_env")
 
 base_dir(
@@ -6,7 +6,7 @@ base_dir(
     path = "my-app",
 )
 
-dir_overlay(
+step(
     name = "npm_install",
     srcs = [
         "package.json",
@@ -16,22 +16,25 @@ dir_overlay(
     dir = ":sources",
 )
 
-dir_overlay(
+step(
     name = "cargo_build",
-    cmd = "cargo build",
-    dir = ":sources",
     srcs = glob([
         "src/**/*",
         "Cargo.lock",
         "Cargo.toml",
     ]),
+    cmd = "cargo build",
+    dir = ":sources",
     env = cargo_build_env,
+    target_compatible_with = [
+        "@platforms//cpu:wasm32",
+    ],
     deps = [
-        "//puddlejumper:build",
+        "//puddlejumper:build.transitive",
     ],
 )
 
-dir_overlay(
+step(
     name = "build",
     srcs = glob([
         "js/**/*",
