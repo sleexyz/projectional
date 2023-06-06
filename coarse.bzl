@@ -153,7 +153,6 @@ def _dir_overlay_impl(ctx):
             continue
         fi
 
-        echo "dir: $dir"
         tar -xf $dir -C $OUTPUT_ROOT
     done
 
@@ -167,8 +166,10 @@ def _dir_overlay_impl(ctx):
 
     set +e
     (cd $OUTPUT_ROOT/{dir_path}; exec $script_path)
+    CODE=$?
     set -e
     tar -C $OUTPUT_ROOT -cf {output} {dir_path}
+    exit $CODE
     '''.format(
         last_overlay = ctx.attr.dir[DirInfo].last_overlay,
         last_overlay_index = last_overlay_index,
