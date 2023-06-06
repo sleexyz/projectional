@@ -1,4 +1,4 @@
-def _base_dir_impl(ctx):
+def _dir_impl(ctx):
     """
     TODO: support directories of arbitrary depth
     """
@@ -40,8 +40,8 @@ def _base_dir_impl(ctx):
         ),
     ]
 
-base_dir = rule(
-    implementation = _base_dir_impl,
+dir = rule(
+    implementation = _dir_impl,
     attrs = {
         "srcs": attr.label_list(allow_files = True),
         "path": attr.string(),
@@ -104,7 +104,7 @@ _dir_test = rule(
 
 def dir_test(name, prev, cmd, srcs = [], **kwargs):
     if (len(srcs) > 0):
-        step(
+        dir_step(
             name = "%s_lib" % name,
             prev = prev,
             cmd = "true",
@@ -119,7 +119,7 @@ def dir_test(name, prev, cmd, srcs = [], **kwargs):
         **kwargs
     )
 
-def _step_impl(ctx):
+def _dir_step_impl(ctx):
     """
     A rule that overlays a directory on top of another directory.
     """
@@ -236,8 +236,8 @@ def _step_impl(ctx):
         ),
     ]
 
-_step = rule(
-    implementation = _step_impl,
+_dir_step = rule(
+    implementation = _dir_step_impl,
     attrs = {
         "cmd": attr.string(),
         "prev": attr.label(allow_files = True),
@@ -247,7 +247,7 @@ _step = rule(
     },
 )
 
-def _step_no_transitive_deps_impl(ctx):
+def _dir_step_no_transitive_deps_impl(ctx):
     prev = ctx.attr.prev
     return [
         DefaultInfo(
@@ -265,14 +265,14 @@ def _step_no_transitive_deps_impl(ctx):
         ),
     ]
 
-_step_no_transitive_deps = rule(
-    implementation = _step_no_transitive_deps_impl,
+_dir_step_no_transitive_deps = rule(
+    implementation = _dir_step_no_transitive_deps_impl,
     attrs = {
         "prev": attr.label(allow_files = True),
     },
 )
 
-def step(name, **kwargs):
+def dir_step(name, **kwargs):
     transitive_label = "%s.transitive" % name
-    _step_no_transitive_deps(name = name, prev = transitive_label)
-    _step(name = transitive_label, **kwargs)
+    _dir_step_no_transitive_deps(name = name, prev = transitive_label)
+    _dir_step(name = transitive_label, **kwargs)
