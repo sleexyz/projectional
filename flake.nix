@@ -77,8 +77,10 @@
             llvmPackages.clang
             clang-wasi32
 
+            # Bazel:
             bazel
             buildifier
+            bazel-watcher
           ];
           shellHook = ''
             export PATH=$(pwd)/puddlejumper/target/release:$PATH
