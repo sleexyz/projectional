@@ -15,8 +15,8 @@ step(
         "src/scanner.cc",
     ],
     cmd = "tree-sitter generate",
-    dir = ":sources",
     env = cargo_build_env,
+    prev = ":sources",
 )
 
 dir_test(
@@ -25,11 +25,11 @@ dir_test(
         "test/**/*",
     ]),
     cmd = "tree-sitter test",
-    dir = ":generate",
     env_inherit = [
         "NIX_LDFLAGS",
         "NIX_CC_WRAPPER_TARGET_HOST_aarch64_apple_darwin",
     ],
+    prev = ":generate",
 )
 
 step(
@@ -43,12 +43,12 @@ step(
         "package.json",
     ]),
     cmd = cargo_with_tree_sitter_features("build"),
-    dir = ":generate",
     env = cargo_build_env,
+    prev = ":generate",
 )
 
 dir_test(
     name = "test",
     cmd = cargo_with_tree_sitter_features("test"),
-    dir = ":build",
+    prev = ":build",
 )

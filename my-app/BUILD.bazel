@@ -13,7 +13,7 @@ step(
         "package-lock.json",
     ],
     cmd = "npm install",
-    dir = ":sources",
+    prev = ":sources",
 )
 
 step(
@@ -24,8 +24,8 @@ step(
         "Cargo.toml",
     ]),
     cmd = "cargo build",
-    dir = ":sources",
     env = cargo_build_env,
+    prev = ":sources",
     target_compatible_with = [
         "@platforms//cpu:wasm32",
     ],
@@ -44,5 +44,5 @@ step(
         "tsconfig.json",
     ]),
     cmd = "npm run build",
-    dir = ":npm_install",
+    prev = ":npm_install",
 )

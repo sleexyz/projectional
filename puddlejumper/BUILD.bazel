@@ -18,8 +18,8 @@ step(
         ],
     ),
     cmd = cargo_with_tree_sitter_features("build"),
-    dir = ":sources",
     env = cargo_build_env,
+    prev = ":sources",
     deps = [
         "//tree-sitter-puddlejumper:build",
     ],
@@ -28,12 +28,12 @@ step(
 step(
     name = "test_lib",
     cmd = cargo_with_tree_sitter_features("test --no-run"),
-    dir = ":build.transitive",
     env = cargo_build_env,
+    prev = ":build.transitive",
 )
 
 dir_test(
     name = "test",
     cmd = cargo_with_tree_sitter_features("test"),
-    dir = ":test_lib",
+    prev = ":test_lib",
 )
