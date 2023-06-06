@@ -1,6 +1,12 @@
 # NOTE: setting positional args will cause script to go in infinite loop
 # set positional-arguments
 
+graph-deps:
+    #!/usr/bin/env bash
+    # Treat ":foo.transitive" and ":foo" as the same node
+    QUERY='deps(//...) except deps(kind("_step_no_transitive_deps", //...), 0)'
+    bazel query --noimplicit_deps $QUERY --output graph | sed 's/\.transitive//g' | uniq > graph.dot
+
 list:
     #!/usr/bin/env just _recurse bash
     YELLOW='\033[1;33m'
