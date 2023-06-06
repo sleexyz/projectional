@@ -247,7 +247,7 @@ _step = rule(
     },
 )
 
-def _remove_transitive_deps_impl(ctx):
+def _step_no_transitive_deps_impl(ctx):
     prev = ctx.attr.prev
     return [
         DefaultInfo(
@@ -265,8 +265,8 @@ def _remove_transitive_deps_impl(ctx):
         ),
     ]
 
-_remove_transitive_deps = rule(
-    implementation = _remove_transitive_deps_impl,
+_step_no_transitive_deps = rule(
+    implementation = _step_no_transitive_deps_impl,
     attrs = {
         "prev": attr.label(allow_files = True),
     },
@@ -274,5 +274,5 @@ _remove_transitive_deps = rule(
 
 def step(name, **kwargs):
     transitive_label = "%s.transitive" % name
-    _remove_transitive_deps(name = name, prev = transitive_label)
+    _step_no_transitive_deps(name = name, prev = transitive_label)
     _step(name = transitive_label, **kwargs)
