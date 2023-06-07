@@ -58,7 +58,7 @@ DirInfo = provider(
     },
 )
 
-def _dir_test_impl(ctx):
+def _dir_exec_impl(ctx):
     output = ctx.actions.declare_file("%s.sh" % ctx.attr.name)
 
     runfiles = ctx.runfiles(
@@ -68,13 +68,14 @@ def _dir_test_impl(ctx):
     )
 
     command = """
-    for file in $RUNFILES_DIR/*.tar; do
+    #!/usr/bin/env bash
+    RUNFILES_DIR=${{RUNFILES_DIR-$(dirname $(pwd))}}
+    for file in "$RUNFILES_DIR/*.tar"; do
         tar -C $RUNFILES_DIR -xf $file
     done
 
     (cd $RUNFILES_DIR/{dir_path}; {cmd})
     """.format(
-        read_only = ctx.attr.read_only,
         dir_path = ctx.attr.prev[DirInfo].path,
         cmd = ctx.attr.cmd,
     ).strip()
@@ -82,27 +83,35 @@ def _dir_test_impl(ctx):
     ctx.actions.write(
         output = output,
         content = command,
+        is_executable = True,
     )
 
-    return [
+    ret = [
         DefaultInfo(executable = output, runfiles = runfiles),
-        RunEnvironmentInfo(
-            inherited_environment = ctx.attr.env_inherit,
-        ),
     ]
+    if (ctx.attr.test):
+        ret = ret + [
+            RunEnvironmentInfo(
+                inherited_environment = ctx.attr.env_inherit,
+            )
+        ]
+    return ret
 
-_dir_test = rule(
-    implementation = _dir_test_impl,
-    test = True,
-    attrs = {
-        "prev": attr.label(allow_files = True),
-        "cmd": attr.string(),
-        "read_only": attr.bool(default = False),
-        "env_inherit": attr.string_list(),
-    },
-)
+def _dir_exec(test):
+    return rule(
+        implementation = _dir_exec_impl,
+        test = test,
+        executable = True,
+        attrs = {
+            "prev": attr.label(allow_files = True),
+            "cmd": attr.string(),
+            "test": attr.bool(),
+            "env_inherit": attr.string_list(),
+        },
+    )
 
-def dir_test(name, prev, cmd, srcs = [], **kwargs):
+
+def dir_exec(_rule, name, prev, cmd, test, srcs = [], **kwargs):
     if (len(srcs) > 0):
         dir_step(
             name = "%s_lib" % name,
@@ -112,10 +121,29 @@ def dir_test(name, prev, cmd, srcs = [], **kwargs):
         )
         prev = "%s_lib" % name
 
-    _dir_test(
+    _rule(
         name = name,
         cmd = cmd,
         prev = prev,
+        test = test,
+        **kwargs
+    )
+
+_dir_exec_test = _dir_exec(test = True)
+def dir_test(name, **kwargs):
+    dir_exec(
+        _rule = _dir_exec_test,
+        name = name,
+        test = True,
+        **kwargs
+    )
+
+_dir_exec_run = _dir_exec(test = False)
+def dir_run(name, **kwargs):
+    dir_exec(
+        _rule = _dir_exec_run,
+        name = name,
+        test = False,
         **kwargs
     )
 

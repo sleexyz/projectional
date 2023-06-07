@@ -7,6 +7,7 @@ fn main() {
     if std::env::var("TARGET").unwrap() == "wasm32-unknown-unknown" {
         let sysroot_dir = std::path::Path::new("bindings/rust/wasm-sysroot");
         compiler
+            .compiler("clang-wasi32")
             .archiver("llvm-ar")
             .include(&sysroot_dir);
     }
