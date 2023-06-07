@@ -1,4 +1,4 @@
-load("//:coarse.bzl", "dir", "dir_step")
+load("//:coarse.bzl", "dir", "dir_step", "dir_run")
 load("//:cargo.bzl", "cargo_build_env")
 
 dir(
@@ -23,9 +23,10 @@ dir_step(
         "Cargo.lock",
         "Cargo.toml",
     ]),
-    cmd = "cargo build",
+    # cmd = "wasm-pack build --out-name index --target web",
+    cmd = "wasm-pack build",
     env = cargo_build_env,
-    prev = ":sources",
+    prev = ":npm_install",
     target_compatible_with = [
         "@platforms//cpu:wasm32",
     ],
@@ -44,5 +45,11 @@ dir_step(
         "tsconfig.json",
     ]),
     cmd = "npm run build",
-    prev = ":npm_install",
+    prev = ":cargo_build",
+)
+
+dir_run(
+    name = "run",
+    cmd = "ranger . ",
+    prev = ":build",
 )
