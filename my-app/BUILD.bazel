@@ -1,5 +1,5 @@
 load("//:coarse.bzl", "dir_run", "dir_step")
-load("//:cargo.bzl", "cargo_build_env")
+load("//:cargo.bzl", "cargo_build_env", "cargo")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -15,7 +15,7 @@ dir_step(
 )
 
 dir_step(
-    name = "cargo_build",
+    name = "wasm_pack_build",
     srcs = glob([
         "src/**/*",
     ]),
@@ -23,7 +23,7 @@ dir_step(
         ".",
         "$CARGO_TARGET_DIR",
     ],
-    cmd = "cargo build",
+    cmd = "wasm-pack build --out-name index",
     env = cargo_build_env,
     target_compatible_with = [
         "@platforms//cpu:wasm32",
@@ -44,13 +44,16 @@ dir_step(
     ]),
     cmd = "npm run build",
     deps = [
-        ":cargo_build",
+        ":wasm_pack_build",
         ":npm_install",
     ],
 )
 
 dir_run(
     name = "run",
-    cmd = "ranger . ",
+    cmd = "npm run start",
+    srcs = [
+        "launch_editor.sh",
+    ],
     deps = [":build"],
 )
