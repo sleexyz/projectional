@@ -2,7 +2,7 @@ def _dir_impl(ctx):
     """
     TODO: support directories of arbitrary depth
     """
-    output_dir = "__overlays__/%s_%s.tar" % (0, ctx.attr.name)
+    output_dir = "__overlays__/%s.tar" % ctx.attr.name
     output = ctx.actions.declare_file(output_dir)
 
     command = """
@@ -32,8 +32,6 @@ def _dir_impl(ctx):
             runfiles = runfiles,
         ),
         DirInfo(
-            last_overlay = ctx.attr.name,
-            last_overlay_index = 0,
             path = ctx.attr.path,
             transitive_deps_files = depset([]),
             non_transitive_runfiles = runfiles,
@@ -52,8 +50,6 @@ DirInfo = provider(
     fields = {
         "path": "path to the directory from workspace root",
         "transitive_deps_files": "transitive files from deps",
-        "last_overlay": "the last overlay applied to this directory",
-        "last_overlay_index": "the index of the last overlay",
         "non_transitive_runfiles": "runfiles that are not transitive",
     },
 )
@@ -63,7 +59,10 @@ def _dir_exec_impl(ctx):
 
     runfiles = ctx.runfiles(
         root_symlinks = depset(
-            transitive = [ctx.attr.prev[DefaultInfo].default_runfiles.root_symlinks],
+            transitive = [
+                dep[DefaultInfo].default_runfiles.root_symlinks
+                for dep in ctx.attr.deps
+            ],
         ),
     )
 
@@ -75,6 +74,7 @@ def _dir_exec_impl(ctx):
     # Runfiles get persisted, so we need to clean up the directory
     rm -rf $RUNFILES_DIR/{dir_path}
 
+    # TODO: extract these in the right order
     for file in "$RUNFILES_DIR/*.tar"; do
         tar -C $RUNFILES_DIR -xf $file
     done
@@ -85,7 +85,7 @@ def _dir_exec_impl(ctx):
     (cd $RUNFILES_DIR/{dir_path}; {cmd})
     """.format(
         env_cmd = make_env_cmd(ctx.attr.env),
-        dir_path = ctx.attr.prev[DirInfo].path,
+        dir_path = ctx.attr.path,
         cmd = ctx.attr.cmd,
     ).strip()
 
@@ -112,8 +112,9 @@ def _dir_exec(test):
         test = test,
         executable = True,
         attrs = {
-            "prev": attr.label(allow_files = True),
+            "deps": attr.label_list(allow_files = True),
             "cmd": attr.string(),
+            "path": attr.string(),
             "test": attr.bool(),
             "env": attr.string_dict(),
             # HACK: Users shouldn't need to specify this.
@@ -121,20 +122,22 @@ def _dir_exec(test):
         },
     )
 
-def dir_exec(_rule, name, prev, cmd, test, srcs = [], **kwargs):
+def dir_exec(_rule, name, deps, cmd, path, test, srcs = [], **kwargs):
     if (len(srcs) > 0):
         dir_step(
             name = "%s_lib" % name,
-            prev = prev,
+            deps = deps,
             cmd = "true",
+            path = path,
             srcs = srcs,
         )
-        prev = "%s_lib" % name
+        deps = ["%s_lib" % name]
 
     _rule(
         name = name,
         cmd = cmd,
-        prev = prev,
+        deps = deps,
+        path = path,
         test = test,
         **kwargs
     )
@@ -169,9 +172,8 @@ def _dir_step_impl(ctx):
     """
     A rule that overlays a directory on top of another directory.
     """
-    dir_path = ctx.attr.prev[DirInfo].path
-    last_overlay_index = ctx.attr.prev[DirInfo].last_overlay_index
-    output_dir = "__overlays__/%s_%s.tar" % (last_overlay_index + 1, ctx.attr.name)
+    dir_path = ctx.attr.path
+    output_dir = "__overlays__/%s.tar" % ctx.attr.name
     output = ctx.actions.declare_file(output_dir)
 
     script = ctx.actions.declare_file("%s.sh" % ctx.attr.name)
@@ -184,8 +186,6 @@ def _dir_step_impl(ctx):
     transitive_depsets = transitive_depsets + [
         dep[DirInfo].transitive_deps_files
         for dep in ctx.attr.deps
-    ] + [
-        ctx.attr.prev[DirInfo].transitive_deps_files,
     ]
 
     dep_dirs = [
@@ -202,17 +202,16 @@ def _dir_step_impl(ctx):
 
     dep_dirs="{dep_dirs}"
 
+    # TODO: extract these in the right order
     for dir in $dep_dirs; do
         if [ -z "$dir" ]; then
             continue
         fi
 
-        # TODO: make sure we extract these in the right order
         tar -xf $dir -C $OUTPUT_ROOT
     done
 
-    tar -xf $OUTPUT_ROOT/__overlays__/{last_overlay_index}_{last_overlay}.tar -C $OUTPUT_ROOT/
-
+    mkdir -p $OUTPUT_ROOT/{dir_path}
     if [[ -d {dir_path} ]]; then
         cp -r -p {dir_path}/* $OUTPUT_ROOT/{dir_path}
     fi
@@ -229,8 +228,6 @@ def _dir_step_impl(ctx):
     outs=""
     for raw_out in $raw_outs; do
         out="$(cd $OUTPUT_ROOT/{dir_path}; realpath --relative-to=$REAL_OUTPUT_ROOT $raw_out)"
-        # echo "raw_out: $raw_out"
-        echo "out: $out"
         outs="$outs $out"
     done
 
@@ -238,8 +235,6 @@ def _dir_step_impl(ctx):
     exit $CODE
     '''.format(
         env_cmd = make_env_cmd(ctx.attr.env),
-        last_overlay = ctx.attr.prev[DirInfo].last_overlay,
-        last_overlay_index = last_overlay_index,
         dep_dirs = " ".join(dep_dirs),
         dir_path = dir_path,
         script_path = script.path,
@@ -255,7 +250,7 @@ def _dir_step_impl(ctx):
     )
 
     inputs = depset(
-        direct = ctx.attr.prev[DefaultInfo].files.to_list() + [script] + ctx.files.srcs,
+        direct = [script] + ctx.files.srcs,
         transitive = transitive_depsets,
     )
 
@@ -269,7 +264,7 @@ def _dir_step_impl(ctx):
 
     runfiles = ctx.runfiles(
         root_symlinks = {
-            "%s.tar" % ctx.attr.prev[DirInfo].path: output,
+            "%s.tar" % ctx.attr.path: output,
         },
     )
     transitive_runfiles = ctx.runfiles(
@@ -278,8 +273,6 @@ def _dir_step_impl(ctx):
             transitive = [
                 dep[DefaultInfo].default_runfiles.root_symlinks
                 for dep in ctx.attr.deps
-            ] + [
-                ctx.attr.prev[DefaultInfo].default_runfiles.root_symlinks,
             ],
         ),
     )
@@ -292,9 +285,7 @@ def _dir_step_impl(ctx):
             runfiles = transitive_runfiles,
         ),
         DirInfo(
-            path = ctx.attr.prev[DirInfo].path,
-            last_overlay = ctx.attr.name,
-            last_overlay_index = last_overlay_index + 1,
+            path = ctx.attr.path,
             transitive_deps_files = transitive_deps_files,
             non_transitive_runfiles = runfiles,
         ),
@@ -304,7 +295,7 @@ _dir_step = rule(
     implementation = _dir_step_impl,
     attrs = {
         "cmd": attr.string(),
-        "prev": attr.label(allow_files = True),
+        "path": attr.string(mandatory = True),
         "srcs": attr.label_list(allow_files = True),
         "deps": attr.label_list(allow_files = True),
         "env": attr.string_dict(),
@@ -322,8 +313,6 @@ def _dir_step_no_transitive_deps_impl(ctx):
         ),
         DirInfo(
             path = prev[DirInfo].path,
-            last_overlay = prev[DirInfo].last_overlay,
-            last_overlay_index = prev[DirInfo].last_overlay_index,
             # Remove transitive deps
             transitive_deps_files = depset(),
             non_transitive_runfiles = prev[DirInfo].non_transitive_runfiles,
