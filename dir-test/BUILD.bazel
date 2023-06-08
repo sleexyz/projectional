@@ -1,0 +1,45 @@
+load("//:coarse.bzl", "dir", "dir_run", "dir_step")
+
+dir(
+    name = "a",
+    path = "a",
+)
+
+dir_step(
+    name = "a_step",
+    outs = [
+        "$DIR_ROOT/foo"
+    ],
+    cmd = "mkdir -p $DIR_ROOT/foo && echo a > $DIR_ROOT/foo/a",
+    prev = ":a",
+)
+
+dir(
+    name = "b",
+    path = "b",
+)
+
+dir_step(
+    name = "b_step",
+    outs = [
+        "$DIR_ROOT/foo"
+    ],
+    cmd = "mkdir -p $DIR_ROOT/foo && echo b > $DIR_ROOT/foo/b && echo b > $DIR_ROOT/foo/a",
+    prev = ":b",
+    deps =  [":a_step"],
+)
+
+dir(
+    name = "c",
+    path = "c",
+)
+
+dir_step(
+    name = "c_step",
+    outs = [
+        "$DIR_ROOT/foo"
+    ],
+    cmd = "mkdir -p $DIR_ROOT/foo && echo c > $DIR_ROOT/foo/c",
+    prev = ":c",
+    deps =  [":b_step"],
+)

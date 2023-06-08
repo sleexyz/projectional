@@ -1,4 +1,4 @@
-load("//:coarse.bzl", "dir", "dir_test", "dir_step")
+load("//:coarse.bzl", "dir", "dir_step", "dir_test")
 load("//:cargo.bzl", "cargo_build_env", "cargo_with_tree_sitter_features")
 
 package(default_visibility = ["//visibility:public"])
@@ -17,6 +17,10 @@ dir_step(
             "Cargo.lock",
         ],
     ),
+    outs = [
+        ".",
+        "$CARGO_TARGET_DIR",
+    ],
     cmd = cargo_with_tree_sitter_features("build"),
     env = cargo_build_env,
     prev = ":sources",
@@ -27,6 +31,10 @@ dir_step(
 
 dir_step(
     name = "test_lib",
+    outs = [
+        ".",
+        "$CARGO_TARGET_DIR",
+    ],
     cmd = cargo_with_tree_sitter_features("test --no-run"),
     env = cargo_build_env,
     prev = ":build.transitive",
