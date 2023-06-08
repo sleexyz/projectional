@@ -13,12 +13,12 @@ cargo_build_env = select_with_common({
     #     "RUSTC_WRAPPER": "sccache",
     "PROFILE": "release",
     "CARGO_INCREMENTAL": "0",
-    "CARGO_TARGET_DIR": "$DIR_ROOT/__cargo-target__",
+    "CARGO_TARGET_DIR": "$DIR_ROOT/target",
     # "CARGO_TARGET_DIR": "/tmp/__cargo-target__",
 })
 
 def cargo_with_tree_sitter_features(cmd):
     return select({
-        "@platforms//cpu:wasm32": "cargo -vv " + cmd + " --features wasm --no-default-features",
-        "//conditions:default": "cargo -vv " + cmd,
+        "@platforms//cpu:wasm32": "cargo %s --features wasm --no-default-features" % cmd,
+        "//conditions:default": "cargo %s" % cmd,
     })

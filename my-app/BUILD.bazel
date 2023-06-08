@@ -1,6 +1,10 @@
 load("//:coarse.bzl", "dir_run", "dir_step")
 load("//:cargo.bzl", "cargo_build_env")
 
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["Cargo.toml"])
+
 dir_step(
     name = "npm_install",
     srcs = [
@@ -14,20 +18,17 @@ dir_step(
     name = "cargo_build",
     srcs = glob([
         "src/**/*",
-        "Cargo.lock",
-        "Cargo.toml",
     ]),
     outs = [
         ".",
         "$CARGO_TARGET_DIR",
     ],
-    cmd = "cargo build --verbose",
+    cmd = "cargo build",
     env = cargo_build_env,
     target_compatible_with = [
         "@platforms//cpu:wasm32",
     ],
     deps = [
-        ":sources",
         "//puddlejumper:build.transitive",
     ],
 )
@@ -42,7 +43,10 @@ dir_step(
         "tsconfig.json",
     ]),
     cmd = "npm run build",
-    deps = [":cargo_build"],
+    deps = [
+        ":cargo_build",
+        ":npm_install",
+    ],
 )
 
 dir_run(

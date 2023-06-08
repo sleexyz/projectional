@@ -3,13 +3,15 @@ load("//:cargo.bzl", "cargo_build_env", "cargo_with_tree_sitter_features")
 
 package(default_visibility = ["//visibility:public"])
 
+exports_files([
+    "Cargo.toml",
+])
+
 dir_step(
     name = "build",
     srcs = glob(
         [
             "src/**/*",
-            "Cargo.toml",
-            "Cargo.lock",
         ],
     ),
     outs = [
@@ -19,6 +21,7 @@ dir_step(
     cmd = cargo_with_tree_sitter_features("build"),
     env = cargo_build_env,
     deps = [
+        "//:cargo_workspace",
         "//tree-sitter-puddlejumper:build",
     ],
 )
