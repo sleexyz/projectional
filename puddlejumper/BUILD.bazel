@@ -1,4 +1,4 @@
-load("//:coarse.bzl", "dir", "dir_step", "dir_test")
+load("//:coarse.bzl", "dir_step", "dir_test")
 load("//:cargo.bzl", "cargo_build_env", "cargo_with_tree_sitter_features")
 
 package(default_visibility = ["//visibility:public"])
@@ -18,7 +18,6 @@ dir_step(
     ],
     cmd = cargo_with_tree_sitter_features("build"),
     env = cargo_build_env,
-    path = "puddlejumper",
     deps = [
         "//tree-sitter-puddlejumper:build",
     ],
@@ -32,13 +31,12 @@ dir_step(
     ],
     cmd = cargo_with_tree_sitter_features("test --no-run"),
     env = cargo_build_env,
-    path = "puddlejumper",
     deps = [":build.transitive"],
 )
 
 dir_test(
     name = "test",
     cmd = cargo_with_tree_sitter_features("test"),
-    path = "puddlejumper",
+    env = cargo_build_env,
     deps = [":test_lib.transitive"],
 )

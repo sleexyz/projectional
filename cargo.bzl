@@ -19,6 +19,6 @@ cargo_build_env = select_with_common({
 
 def cargo_with_tree_sitter_features(cmd):
     return select({
-        "@platforms//cpu:wasm32": "cargo --verbose " + cmd + " --features wasm --no-default-features",
-        "//conditions:default": "cargo --verbose " + cmd,
+        "@platforms//cpu:wasm32": "cargo -vv " + cmd + " --features wasm --no-default-features",
+        "//conditions:default": "cargo -vv " + cmd,
     })

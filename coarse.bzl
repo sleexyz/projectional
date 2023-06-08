@@ -1,51 +1,3 @@
-def _dir_impl(ctx):
-    """
-    TODO: support directories of arbitrary depth
-    """
-    output_dir = "__overlays__/%s.tar" % ctx.attr.name
-    output = ctx.actions.declare_file(output_dir)
-
-    command = """
-    mkdir -p {path}
-    tar -cf {output} {path}
-    """.format(
-        path = ctx.attr.path,
-        output = output.path,
-    ).strip()
-
-    ctx.actions.run_shell(
-        inputs = depset(direct = ctx.files.srcs),
-        outputs = [output],
-        command = command,
-        use_default_shell_env = True,
-    )
-
-    runfiles = ctx.runfiles(
-        root_symlinks = {
-            "%s.tar" % ctx.attr.path: output,
-        },
-    )
-
-    return [
-        DefaultInfo(
-            files = depset([output]),
-            runfiles = runfiles,
-        ),
-        DirInfo(
-            path = ctx.attr.path,
-            transitive_deps_files = depset([]),
-            non_transitive_runfiles = runfiles,
-        ),
-    ]
-
-dir = rule(
-    implementation = _dir_impl,
-    attrs = {
-        "srcs": attr.label_list(allow_files = True),
-        "path": attr.string(),
-    },
-)
-
 DirInfo = provider(
     fields = {
         "path": "path to the directory from workspace root",
@@ -75,7 +27,8 @@ def _dir_exec_impl(ctx):
     rm -rf $RUNFILES_DIR/{dir_path}
 
     # TODO: extract these in the right order
-    for file in "$RUNFILES_DIR/*.tar"; do
+    for file in $RUNFILES_DIR/*.tar; do
+        echo $file
         tar -C $RUNFILES_DIR -xf $file
     done
 
@@ -122,7 +75,9 @@ def _dir_exec(test):
         },
     )
 
-def dir_exec(_rule, name, deps, cmd, path, test, srcs = [], **kwargs):
+def dir_exec(_rule, name, deps, cmd, test, path = None, srcs = [], **kwargs):
+    if path == None:
+        path = native.package_name()
     if (len(srcs) > 0):
         dir_step(
             name = "%s_lib" % name,
@@ -326,7 +281,13 @@ _dir_step_no_transitive_deps = rule(
     },
 )
 
-def dir_step(name, **kwargs):
+def dir_step(name, path = None, **kwargs):
+    if path == None:
+        path = native.package_name()
     transitive_label = "%s.transitive" % name
     _dir_step_no_transitive_deps(name = name, prev = transitive_label)
-    _dir_step(name = transitive_label, **kwargs)
+    _dir_step(
+        name = transitive_label,
+        path = path,
+        **kwargs
+    )
