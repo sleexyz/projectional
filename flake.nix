@@ -81,6 +81,7 @@
             bazel
             buildifier
             bazel-watcher
+            sccache
           ];
           shellHook = ''
             export PATH=$(pwd)/puddlejumper/target/release:$PATH
