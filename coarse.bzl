@@ -27,8 +27,7 @@ def _dir_exec_impl(ctx):
     rm -rf $RUNFILES_DIR/{dir_path}
 
     # TODO: extract these in the right order
-    for file in $RUNFILES_DIR/*.tar; do
-        echo $file
+    for file in $RUNFILES_DIR/*.dir.tar; do
         tar -C $RUNFILES_DIR -xf $file
     done
 
@@ -128,10 +127,10 @@ def _dir_step_impl(ctx):
     A rule that overlays a directory on top of another directory.
     """
     dir_path = ctx.attr.path
-    output_dir = "__overlays__/%s.tar" % ctx.attr.name
+    output_dir = "__overlays__/%s.dir.tar" % ctx.attr.name
     output = ctx.actions.declare_file(output_dir)
 
-    script = ctx.actions.declare_file("%s.sh" % ctx.attr.name)
+    script = ctx.actions.declare_file("__overlays__/%s.sh" % ctx.attr.name)
 
     transitive_depsets = [
         dep[DefaultInfo].files
@@ -141,6 +140,7 @@ def _dir_step_impl(ctx):
     transitive_depsets = transitive_depsets + [
         dep[DirInfo].transitive_deps_files
         for dep in ctx.attr.deps
+        if DirInfo in dep
     ]
 
     dep_dirs = [
@@ -155,21 +155,26 @@ def _dir_step_impl(ctx):
     export DIR_ROOT="$(realpath $OUTPUT_ROOT)"
     {env_cmd}
 
-    dep_dirs="{dep_dirs}"
-
     # TODO: extract these in the right order
-    for dir in $dep_dirs; do
-        if [ -z "$dir" ]; then
+    for f in {dep_dirs}; do
+        if [ -z "$f" ]; then
             continue
         fi
 
-        tar -xf $dir -C $OUTPUT_ROOT
+        if [[ $f == *.dir.tar ]]; then
+            tar -C $OUTPUT_ROOT -xf $f
+        else
+            mkdir -p $OUTPUT_ROOT/$(dirname $f)
+            cp -p $f $OUTPUT_ROOT/$f
+        fi
+    done
+
+    for dep in {direct_deps}; do
+        mkdir -p $OUTPUT_ROOT/$(dirname $dep)
+        cp -p $dep $OUTPUT_ROOT/$dep
     done
 
     mkdir -p $OUTPUT_ROOT/{dir_path}
-    if [[ -d {dir_path} ]]; then
-        cp -r -p {dir_path}/* $OUTPUT_ROOT/{dir_path}
-    fi
 
     script_path=$(realpath {script_path})
 
@@ -186,12 +191,14 @@ def _dir_step_impl(ctx):
         outs="$outs $out"
     done
 
-    tar -C $OUTPUT_ROOT -cf {output} $outs
+    tar -C $OUTPUT_ROOT --exclude="__overlays__" -cf {output} $outs
     exit $CODE
     '''.format(
         env_cmd = make_env_cmd(ctx.attr.env),
         dep_dirs = " ".join(dep_dirs),
+        # TODO: retire
         dir_path = dir_path,
+        direct_deps = " ".join([file.path for file in ctx.files.srcs]),
         script_path = script.path,
         output = output.path,
         output_root = output.path[:-(len(output_dir) + 1)],
@@ -219,7 +226,7 @@ def _dir_step_impl(ctx):
 
     runfiles = ctx.runfiles(
         root_symlinks = {
-            "%s.tar" % ctx.attr.path: output,
+            "%s.dir.tar" % ctx.attr.path: output,
         },
     )
     transitive_runfiles = ctx.runfiles(
@@ -284,6 +291,8 @@ _dir_step_no_transitive_deps = rule(
 def dir_step(name, path = None, **kwargs):
     if path == None:
         path = native.package_name()
+        if path == "":
+            path = "."
     transitive_label = "%s.transitive" % name
     _dir_step_no_transitive_deps(name = name, prev = transitive_label)
     _dir_step(
