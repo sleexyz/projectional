@@ -69,13 +69,22 @@ def _dir_exec_impl(ctx):
 
     command = """
     #!/usr/bin/env bash
+    set -e
     RUNFILES_DIR=${{RUNFILES_DIR-$(dirname $(pwd))}}
+
+    # Runfiles get persisted, so we need to clean up the directory
+    rm -rf $RUNFILES_DIR/{dir_path}
+
     for file in "$RUNFILES_DIR/*.tar"; do
         tar -C $RUNFILES_DIR -xf $file
     done
 
+    export DIR_ROOT=$RUNFILES_DIR
+    {env_cmd}
+
     (cd $RUNFILES_DIR/{dir_path}; {cmd})
     """.format(
+        env_cmd = make_env_cmd(ctx.attr.env),
         dir_path = ctx.attr.prev[DirInfo].path,
         cmd = ctx.attr.cmd,
     ).strip()
@@ -93,7 +102,7 @@ def _dir_exec_impl(ctx):
         ret = ret + [
             RunEnvironmentInfo(
                 inherited_environment = ctx.attr.env_inherit,
-            )
+            ),
         ]
     return ret
 
@@ -106,10 +115,11 @@ def _dir_exec(test):
             "prev": attr.label(allow_files = True),
             "cmd": attr.string(),
             "test": attr.bool(),
+            "env": attr.string_dict(),
+            # HACK: Users shouldn't need to specify this.
             "env_inherit": attr.string_list(),
         },
     )
-
 
 def dir_exec(_rule, name, prev, cmd, test, srcs = [], **kwargs):
     if (len(srcs) > 0):
@@ -130,6 +140,7 @@ def dir_exec(_rule, name, prev, cmd, test, srcs = [], **kwargs):
     )
 
 _dir_exec_test = _dir_exec(test = True)
+
 def dir_test(name, **kwargs):
     dir_exec(
         _rule = _dir_exec_test,
@@ -139,6 +150,7 @@ def dir_test(name, **kwargs):
     )
 
 _dir_exec_run = _dir_exec(test = False)
+
 def dir_run(name, **kwargs):
     dir_exec(
         _rule = _dir_exec_run,
@@ -146,6 +158,12 @@ def dir_run(name, **kwargs):
         test = False,
         **kwargs
     )
+
+def make_env_cmd(env):
+    return " ".join([
+        "export %s=%s" % (key, value)
+        for key, value in env.items()
+    ])
 
 def _dir_step_impl(ctx):
     """
@@ -178,6 +196,10 @@ def _dir_step_impl(ctx):
     command = '''
     set -e
     OUTPUT_ROOT={output_root}
+
+    export DIR_ROOT="$(realpath $OUTPUT_ROOT)"
+    {env_cmd}
+
     dep_dirs="{dep_dirs}"
 
     for dir in $dep_dirs; do
@@ -185,13 +207,14 @@ def _dir_step_impl(ctx):
             continue
         fi
 
+        # TODO: make sure we extract these in the right order
         tar -xf $dir -C $OUTPUT_ROOT
     done
 
     tar -xf $OUTPUT_ROOT/__overlays__/{last_overlay_index}_{last_overlay}.tar -C $OUTPUT_ROOT/
 
     if [[ -d {dir_path} ]]; then
-        cp -Lr {dir_path}/* $OUTPUT_ROOT/{dir_path}
+        cp -r -p {dir_path}/* $OUTPUT_ROOT/{dir_path}
     fi
 
     script_path=$(realpath {script_path})
@@ -200,9 +223,21 @@ def _dir_step_impl(ctx):
     (cd $OUTPUT_ROOT/{dir_path}; exec $script_path)
     CODE=$?
     set -e
-    tar -C $OUTPUT_ROOT -cf {output} {dir_path}
+
+    REAL_OUTPUT_ROOT=$(realpath $OUTPUT_ROOT)
+    raw_outs="{outs}"
+    outs=""
+    for raw_out in $raw_outs; do
+        out="$(cd $OUTPUT_ROOT/{dir_path}; realpath --relative-to=$REAL_OUTPUT_ROOT $raw_out)"
+        # echo "raw_out: $raw_out"
+        echo "out: $out"
+        outs="$outs $out"
+    done
+
+    tar -C $OUTPUT_ROOT -cf {output} $outs
     exit $CODE
     '''.format(
+        env_cmd = make_env_cmd(ctx.attr.env),
         last_overlay = ctx.attr.prev[DirInfo].last_overlay,
         last_overlay_index = last_overlay_index,
         dep_dirs = " ".join(dep_dirs),
@@ -210,6 +245,7 @@ def _dir_step_impl(ctx):
         script_path = script.path,
         output = output.path,
         output_root = output.path[:-(len(output_dir) + 1)],
+        outs = " ".join(ctx.attr.outs),
     ).strip()
 
     ctx.actions.write(
@@ -272,6 +308,7 @@ _dir_step = rule(
         "srcs": attr.label_list(allow_files = True),
         "deps": attr.label_list(allow_files = True),
         "env": attr.string_dict(),
+        "outs": attr.string_list(default = ["."]),
     },
 )
 
