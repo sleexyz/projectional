@@ -15,7 +15,8 @@ dir_step(
         "src/scanner.cc",
     ],
     cmd = "tree-sitter generate",
-    prev = ":sources",
+    path = "tree-sitter-puddlejumper",
+    deps = [":sources"],
 )
 
 dir_test(
@@ -28,7 +29,8 @@ dir_test(
         "NIX_LDFLAGS",
         "NIX_CC_WRAPPER_TARGET_HOST_aarch64_apple_darwin",
     ],
-    prev = ":generate",
+    path = "tree-sitter-puddlejumper",
+    deps = [":generate"],
 )
 
 dir_step(
@@ -47,11 +49,13 @@ dir_step(
     ],
     cmd = cargo_with_tree_sitter_features("build"),
     env = cargo_build_env,
-    prev = ":generate",
+    path = "tree-sitter-puddlejumper",
+    deps = [":generate"],
 )
 
 dir_test(
     name = "test",
     cmd = cargo_with_tree_sitter_features("test"),
-    prev = ":build",
+    path = "tree-sitter-puddlejumper",
+    deps = [":build"],
 )

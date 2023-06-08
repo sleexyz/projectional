@@ -1,11 +1,6 @@
 load("//:coarse.bzl", "dir", "dir_run", "dir_step")
 load("//:cargo.bzl", "cargo_build_env")
 
-dir(
-    name = "sources",
-    path = "my-app",
-)
-
 dir_step(
     name = "npm_install",
     srcs = [
@@ -13,7 +8,7 @@ dir_step(
         "package-lock.json",
     ],
     cmd = "npm install",
-    prev = ":sources",
+    path = "my-app",
 )
 
 dir_step(
@@ -29,11 +24,12 @@ dir_step(
     ],
     cmd = "cargo build --verbose",
     env = cargo_build_env,
-    prev = ":sources",
+    path = "my-app",
     target_compatible_with = [
         "@platforms//cpu:wasm32",
     ],
     deps = [
+        ":sources",
         "//puddlejumper:build.transitive",
     ],
 )
@@ -48,11 +44,13 @@ dir_step(
         "tsconfig.json",
     ]),
     cmd = "npm run build",
-    prev = ":cargo_build",
+    path = "my-app",
+    deps = [":cargo_build"],
 )
 
 dir_run(
     name = "run",
     cmd = "ranger . ",
-    prev = ":build",
+    path = "my-app",
+    deps = [":build"],
 )
