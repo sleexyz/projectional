@@ -1,0 +1,16 @@
+load("//:coarse.bzl", "dir_run", "dir_step")
+
+dir_run(
+    name = "test",
+    cmd = '''
+        echo $BUILD_WORKSPACE_DIRECTORY
+    ''',
+    deps = [
+        "no_op",
+    ],
+)
+
+dir_step(
+    name = "no_op",
+    cmd = "true",
+)

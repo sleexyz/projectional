@@ -56,4 +56,5 @@ dir_run(
         "launch_editor.sh",
     ],
     deps = [":build"],
+    tags = ["ibazel_notify_changes"],
 )
