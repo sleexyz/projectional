@@ -7,7 +7,8 @@ DirInfo = provider(
 )
 
 def _dir_exec_impl(ctx):
-    output = ctx.actions.declare_file("%s.sh" % ctx.attr.name)
+    script_filename = "%s.sh" % ctx.attr.name
+    output = ctx.actions.declare_file(script_filename)
 
     runfiles = ctx.runfiles(
         root_symlinks = depset(
@@ -20,22 +21,30 @@ def _dir_exec_impl(ctx):
 
     command = """
     #!/usr/bin/env bash
+
     set -e
-    RUNFILES_DIR=${{RUNFILES_DIR-$(dirname $(pwd))}}
+    export RUNFILES_DIR=${{RUNFILES_DIR-$(dirname $(pwd))}}
 
     # Runfiles get persisted, so we need to clean up the directory
-    rm -rf $RUNFILES_DIR/{dir_path}
+    # rm -rf $RUNFILES_DIR/{dir_path}
 
     # TODO: extract these in the right order
     for file in $RUNFILES_DIR/*.dir.tar; do
-        tar -C $RUNFILES_DIR -xf $file
+        tar -C $RUNFILES_DIR --keep-newer-files -xf $file 2>/dev/null >/dev/null
     done
+
+    if [ "$1" == "--no-exec" ]; then
+        exit 0
+    fi
 
     export DIR_ROOT=$RUNFILES_DIR
     {env_cmd}
 
+    export START_SCRIPT=$0
+
     (cd $RUNFILES_DIR/{dir_path}; {cmd})
     """.format(
+        output= output.path,
         env_cmd = make_env_cmd(ctx.attr.env),
         dir_path = ctx.attr.path,
         cmd = ctx.attr.cmd,
@@ -74,7 +83,7 @@ def _dir_exec(test):
         },
     )
 
-def dir_exec(_rule, name, deps, cmd, test, path = None, srcs = [], **kwargs):
+def dir_exec(_rule, name, cmd, test, deps = [], path = None, srcs = [], **kwargs):
     if path == None:
         path = native.package_name()
     if (len(srcs) > 0):
@@ -187,6 +196,7 @@ def _dir_step_impl(ctx):
     raw_outs="{outs}"
     outs=""
     for raw_out in $raw_outs; do
+        (cd $OUTPUT_ROOT/{dir_path}; mkdir -p $raw_out)
         out="$(cd $OUTPUT_ROOT/{dir_path}; realpath --relative-to=$REAL_OUTPUT_ROOT $raw_out)"
         outs="$outs $out"
     done

@@ -1,3 +1,4 @@
+use ::puddlejumper::puddlejumper::node::{NodeId, Context};
 use wasm_bindgen::prelude::*;
 use web_sys::console;
 use std::io::{Error, ErrorKind};
@@ -20,19 +21,21 @@ pub fn main_js() -> Result<(), JsValue> {
     #[cfg(debug_assertions)]
     console_error_panic_hook::set_once();
 
-    let foo = parse("Hello\n\tP1\n\t\thello");
-    match foo {
-        Some(s) => console::log_1(&JsValue::from_str(s.as_str())),
-        None => console::log_1(&JsValue::from_str("None")),
-    }
+    let Some((context, foo)) = parse("Hello\n\tP1\n\t\thello") else { return Ok(()) };
+
+    let mut out = Vec::new();
+    context.pretty_print(foo, &mut puddlejumper::node::printer::PrintContext {
+        level: 0,
+        needs_indent: true,
+        out: &mut out,
+    });
+    console::log_1(&JsValue::from_str(&String::from_utf8(out).unwrap()));
     Ok(())
 }
 
-fn parse(code: &str) -> Option<String>  {
+fn parse(code: &str) -> Option<(Context, NodeId)>  {
     let p = puddlejumper::parser::Parser::new(code.into());
-    p.load_document().and_then(|(ctx, node)| {
-        Some(format!("{:#?}", ctx.arena[node]))
-    })
+    p.load_document()
 }
 
 fn print_prioritized(code: &str) -> Option<String>  {
