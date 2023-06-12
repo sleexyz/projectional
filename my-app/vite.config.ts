@@ -9,14 +9,19 @@ const reloadOnStdin= () => ({
   name: 'reload-on-stdin',
   handleHotUpdate({ file, server }) {
     console.log("handleHotUpdate: ", file);
+    if (file.endsWith(".html")) {
+      // ignore update
+      return [];
+    }
   },
   configureServer(server) {
     process.stdin.on('data', data => {
       const msgs = new Set(data.toString().split("\n"));
       // TODO: Move this to bazel rule.
       if (msgs.has("IBAZEL_BUILD_COMPLETED SUCCESS")) {
+        console.log("reloading");
         // Run START_SCRIPT --no-exec to completion:
-        childProcess.execSync(process.env["START_SCRIPT"] + " --no-exec", {stdio: 'inherit'});
+        // childProcess.execSync(process.env["START_SCRIPT"] + " --no-exec", {stdio: 'inherit'});
       }
     });
   }

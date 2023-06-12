@@ -23,26 +23,28 @@ def _dir_exec_impl(ctx):
     #!/usr/bin/env bash
 
     set -e
-    export RUNFILES_DIR=${{RUNFILES_DIR-$(dirname $(pwd))}}
+    # export RUNFILES_DIR=${{RUNFILES_DIR-$(dirname $(pwd))}}
 
     # Runfiles get persisted, so we need to clean up the directory
     # rm -rf $RUNFILES_DIR/{dir_path}
 
     # TODO: extract these in the right order
-    for file in $RUNFILES_DIR/*.dir.tar; do
-        tar -C $RUNFILES_DIR --keep-newer-files -xf $file 2>/dev/null >/dev/null
-    done
+    # for file in $RUNFILES_DIR/*.dir.tar; do
+    #     tar -C $RUNFILES_DIR --keep-newer-files -xf $file 2>/dev/null >/dev/null
+    # done
 
     if [ "$1" == "--no-exec" ]; then
         exit 0
     fi
 
-    export DIR_ROOT=$RUNFILES_DIR
+    # export DIR_ROOT=$RUNFILES_DIR
+    export DIR_ROOT=$(realpath ../../)
+    export RUNFILES_DIR=$(realpath ../../)
     {env_cmd}
 
     export START_SCRIPT=$0
 
-    (cd $RUNFILES_DIR/{dir_path}; {cmd})
+    (cd $DIR_ROOT/{dir_path}; {cmd})
     """.format(
         output= output.path,
         env_cmd = make_env_cmd(ctx.attr.env),
@@ -171,7 +173,8 @@ def _dir_step_impl(ctx):
         fi
 
         if [[ $f == *.dir.tar ]]; then
-            tar -C $OUTPUT_ROOT -xf $f
+            # tar -C $OUTPUT_ROOT -xf $f
+            tar -C $OUTPUT_ROOT --keep-newer-files -xf $f 2>/dev/null >/dev/null
         else
             mkdir -p $OUTPUT_ROOT/$(dirname $f)
             cp -p $f $OUTPUT_ROOT/$f

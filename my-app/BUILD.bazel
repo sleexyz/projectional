@@ -23,7 +23,7 @@ dir_step(
         ".",
         "$CARGO_TARGET_DIR",
     ],
-    cmd = "wasm-pack build --out-name index",
+    cmd = "wasm-pack build --out-name index --dev",
     env = cargo_build_env,
     target_compatible_with = [
         "@platforms//cpu:wasm32",
@@ -41,6 +41,7 @@ dir_step(
         "vite.config.ts",
         "tsconfig.node.json",
         "tsconfig.json",
+        "launch_editor.sh",
     ]),
     cmd = "npm run build",
     deps = [
@@ -52,9 +53,6 @@ dir_step(
 dir_run(
     name = "run",
     cmd = "npm run start",
-    srcs = [
-        "launch_editor.sh",
-    ],
     deps = [":build"],
     tags = ["ibazel_notify_changes"],
 )
