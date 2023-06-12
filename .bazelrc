@@ -1,0 +1,3 @@
+build --spawn_strategy=local
+test --spawn_strategy=local
+run --spawn_strategy=local

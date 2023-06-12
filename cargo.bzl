@@ -11,17 +11,19 @@ cargo_build_env = select_with_common({
     },
 }, {
     "CARGO_TARGET_DIR": "$DIR_ROOT/target",
-    # "CARGO_TERM_VERBOSE": "true",
+    "CARGO_TERM_VERBOSE": "true",
+    "CARGO_INCREMENTAL": "1",
+    "PROFILE": "debug",
 })
 
 def cargo_with_tree_sitter_features(cmd):
     return select({
-        "@platforms//cpu:wasm32": "cargo %s --release --features wasm --no-default-features" % cmd,
-        "//conditions:default": "cargo %s --release" % cmd,
+        "@platforms//cpu:wasm32": "cargo %s --features wasm --no-default-features" % cmd,
+        "//conditions:default": "cargo %s" % cmd,
     })
 
 def cargo(cmd):
     return select({
-        "@platforms//cpu:wasm32": "cargo %s --release" % cmd,
-        "//conditions:default": "cargo %s --release" % cmd,
+        "@platforms//cpu:wasm32": "cargo %s" % cmd,
+        "//conditions:default": "cargo %s" % cmd,
     })
