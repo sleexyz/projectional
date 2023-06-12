@@ -119,8 +119,7 @@ def _local_step_impl(ctx):
     A rule that overlays a directory on top of another directory.
     """
     cwd = ctx.attr.cwd
-    # TODO: use qualified package name
-    output_dir = "__overlays__/%s/%s.dir" % (ctx.attr.cwd, ctx.attr.name)
+    output_dir = "__overlays__/%s/%s.dir" % (ctx.attr.package_name, ctx.attr.name)
     output = ctx.actions.declare_symlink(output_dir)
 
     script = ctx.actions.declare_file("__overlays__/%s/%s.sh" % (ctx.attr.cwd, ctx.attr.name))
@@ -254,6 +253,7 @@ _local_step = rule(
     attrs = {
         "cmd": attr.string(),
         "cwd": attr.string(mandatory = True),
+        "package_name": attr.string(mandatory = True),
         "srcs": attr.label_list(allow_files = True),
         "deps": attr.label_list(allow_files = True),
         "env": attr.string_dict(),
@@ -284,8 +284,9 @@ _local_step_no_transitive_deps = rule(
 )
 
 def local_step(name, cwd = None, **kwargs):
+    package_name = native.package_name()
     if cwd == None:
-        cwd = native.package_name()
+        cwd = package_name
         if cwd == "":
             cwd = "."
     transitive_label = "%s.transitive" % name
@@ -293,5 +294,6 @@ def local_step(name, cwd = None, **kwargs):
     _local_step(
         name = transitive_label,
         cwd = cwd,
+        package_name = package_name,
         **kwargs
     )
