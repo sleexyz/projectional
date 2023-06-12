@@ -1,5 +1,5 @@
 load("//:coarse.bzl", "dir_run", "dir_step")
-load("//:cargo.bzl", "cargo_build_env", "cargo")
+load("//:cargo.bzl", "cargo", "cargo_build_env")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -45,14 +45,14 @@ dir_step(
     ]),
     cmd = "npm run build",
     deps = [
-        ":wasm_pack_build",
         ":npm_install",
+        ":wasm_pack_build",
     ],
 )
 
 dir_run(
     name = "run",
     cmd = "npm run start",
-    deps = [":build"],
     tags = ["ibazel_notify_changes"],
+    deps = [":build"],
 )

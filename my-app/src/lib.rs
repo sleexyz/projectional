@@ -20,7 +20,7 @@ pub fn main_js() -> Result<(), JsValue> {
     #[cfg(debug_assertions)]
     console_error_panic_hook::set_once();
 
-    let Some((context, foo)) = parse("Hello\n\tP1\n\t\thullo") else { return Ok(()) };
+    let Some((context, foo)) = parse("Hello\n\tP1\n\t\thello") else { return Ok(()) };
 
     let mut out = Vec::new();
     context.pretty_print(

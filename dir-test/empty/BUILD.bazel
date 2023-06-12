@@ -2,9 +2,9 @@ load("//:coarse.bzl", "dir_run", "dir_step")
 
 dir_run(
     name = "test",
-    cmd = '''
+    cmd = """
         echo $BUILD_WORKSPACE_DIRECTORY
-    ''',
+    """,
     deps = [
         "no_op",
     ],

@@ -1,5 +1,6 @@
 DirInfo = provider(
     fields = {
+        # TODO: rename cwd
         "path": "path to the directory from workspace root",
         "transitive_deps_files": "transitive files from deps",
         "non_transitive_runfiles": "runfiles that are not transitive",
@@ -32,7 +33,7 @@ def _dir_exec_impl(ctx):
 
     (cd $DIR_ROOT/{dir_path}; {cmd})
     """.format(
-        output= output.path,
+        output = output.path,
         env_cmd = make_env_cmd(ctx.attr.env),
         dir_path = ctx.attr.path,
         cmd = ctx.attr.cmd,
@@ -124,17 +125,15 @@ def _dir_step_impl(ctx):
     A rule that overlays a directory on top of another directory.
     """
     dir_path = ctx.attr.path
-    output_dir = "__overlays__/%s.dir.tar" % ctx.attr.name
-    output = ctx.actions.declare_file(output_dir)
+    output_dir = "__overlays__/%s/%s.dir" % (ctx.attr.path, ctx.attr.name)
+    output = ctx.actions.declare_symlink(output_dir)
 
-    script = ctx.actions.declare_file("__overlays__/%s.sh" % ctx.attr.name)
+    script = ctx.actions.declare_file("__overlays__/%s/%s.sh" % (ctx.attr.path, ctx.attr.name))
 
     transitive_depsets = [
         dep[DefaultInfo].files
         for dep in ctx.attr.deps
-    ]
-
-    transitive_depsets = transitive_depsets + [
+    ] + [
         dep[DirInfo].transitive_deps_files
         for dep in ctx.attr.deps
         if DirInfo in dep
@@ -158,12 +157,11 @@ def _dir_step_impl(ctx):
             continue
         fi
 
-        if [[ $f == *.dir.tar ]]; then
-            # tar -C $OUTPUT_ROOT -xf $f
-            tar -C $OUTPUT_ROOT --keep-newer-files -xf $f 2>/dev/null >/dev/null
+        if [[ $f == *.dir ]]; then
+            rsync -a $f/ $OUTPUT_ROOT/
         else
             mkdir -p $OUTPUT_ROOT/$(dirname $f)
-            cp -p $f $OUTPUT_ROOT/$f
+            ln -sf $(realpath $f) $OUTPUT_ROOT/$f
         fi
     done
 
@@ -190,12 +188,12 @@ def _dir_step_impl(ctx):
         outs="$outs $out"
     done
 
-    tar -C $OUTPUT_ROOT --exclude="__overlays__" -cf {output} $outs
+    ln -sfn $REAL_OUTPUT_ROOT {output}
     exit $CODE
     '''.format(
         env_cmd = make_env_cmd(ctx.attr.env),
         dep_dirs = " ".join(dep_dirs),
-        # TODO: retire
+        # TODO: rename cwd
         dir_path = dir_path,
         direct_deps = " ".join([file.path for file in ctx.files.srcs]),
         script_path = script.path,
@@ -223,9 +221,16 @@ def _dir_step_impl(ctx):
         use_default_shell_env = True,
     )
 
+    # HACK: The only way to create a dangling symlink is via ctx.actions.symlink
+    sym_output = ctx.actions.declare_file("%s.sym" % output_dir)
+    ctx.actions.symlink(
+        output = sym_output,
+        target_file = output,
+    )
+
     runfiles = ctx.runfiles(
         root_symlinks = {
-            "%s.dir.tar" % ctx.attr.path: output,
+            "%s.dir" % ctx.attr.path: sym_output,
         },
     )
     transitive_runfiles = ctx.runfiles(

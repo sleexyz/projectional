@@ -16,7 +16,7 @@ dir_step(
     cmd = "tree-sitter generate",
     deps = [
         "//:cargo_workspace",
-    ]
+    ],
 )
 
 dir_test(
