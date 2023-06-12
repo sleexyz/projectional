@@ -1,4 +1,4 @@
-load("//:coarse.bzl", "dir_run", "dir_step")
+load("//:rules_local.bzl", "dir_run", "dir_step")
 
 dir_step(
     name = "a",
