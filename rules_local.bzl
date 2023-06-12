@@ -23,10 +23,6 @@ def _local_exec_impl(ctx):
     #!/usr/bin/env bash
     set -e
 
-    if [ "$1" == "--no-exec" ]; then
-        exit 0
-    fi
-
     export DIR_ROOT=$(realpath ../../)
     {env_cmd}
 
