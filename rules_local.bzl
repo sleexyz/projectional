@@ -1,6 +1,5 @@
 DirInfo = provider(
     fields = {
-        "cwd": "Working directory for commands. Defaults to the directory of the BUILD file.",
         "transitive_deps_files": "Transitive files from deps.",
         "non_transitive_runfiles": "Runfiles that are not transitive.",
     },
@@ -245,7 +244,6 @@ def _local_step_impl(ctx):
             runfiles = transitive_runfiles,
         ),
         DirInfo(
-            cwd = ctx.attr.cwd,
             transitive_deps_files = transitive_deps_files,
             non_transitive_runfiles = runfiles,
         ),
@@ -272,7 +270,6 @@ def _local_step_no_transitive_deps_impl(ctx):
             runfiles = prev[DirInfo].non_transitive_runfiles,
         ),
         DirInfo(
-            cwd = prev[DirInfo].cwd,
             # Remove transitive deps
             transitive_deps_files = depset(),
             non_transitive_runfiles = prev[DirInfo].non_transitive_runfiles,
