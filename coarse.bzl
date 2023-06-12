@@ -21,28 +21,14 @@ def _dir_exec_impl(ctx):
 
     command = """
     #!/usr/bin/env bash
-
     set -e
-    # export RUNFILES_DIR=${{RUNFILES_DIR-$(dirname $(pwd))}}
-
-    # Runfiles get persisted, so we need to clean up the directory
-    # rm -rf $RUNFILES_DIR/{dir_path}
-
-    # TODO: extract these in the right order
-    # for file in $RUNFILES_DIR/*.dir.tar; do
-    #     tar -C $RUNFILES_DIR --keep-newer-files -xf $file 2>/dev/null >/dev/null
-    # done
 
     if [ "$1" == "--no-exec" ]; then
         exit 0
     fi
 
-    # export DIR_ROOT=$RUNFILES_DIR
     export DIR_ROOT=$(realpath ../../)
-    export RUNFILES_DIR=$(realpath ../../)
     {env_cmd}
-
-    export START_SCRIPT=$0
 
     (cd $DIR_ROOT/{dir_path}; {cmd})
     """.format(
