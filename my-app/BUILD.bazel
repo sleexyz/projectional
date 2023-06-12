@@ -1,11 +1,11 @@
-load("//:rules_local.bzl", "dir_run", "dir_step")
+load("//:rules_local.bzl", "local_run", "local_step")
 load("//:cargo.bzl", "cargo", "cargo_build_env")
 
 package(default_visibility = ["//visibility:public"])
 
 exports_files(["Cargo.toml"])
 
-dir_step(
+local_step(
     name = "npm_install",
     srcs = [
         "package.json",
@@ -14,7 +14,7 @@ dir_step(
     cmd = "npm install",
 )
 
-dir_step(
+local_step(
     name = "wasm_pack_build",
     srcs = glob([
         "src/**/*",
@@ -33,7 +33,7 @@ dir_step(
     ],
 )
 
-dir_step(
+local_step(
     name = "build",
     srcs = glob([
         "js/**/*",
@@ -50,7 +50,7 @@ dir_step(
     ],
 )
 
-dir_run(
+local_run(
     name = "run",
     cmd = "npm run start",
     tags = ["ibazel_notify_changes"],

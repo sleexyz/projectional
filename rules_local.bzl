@@ -7,7 +7,7 @@ DirInfo = provider(
     },
 )
 
-def _dir_exec_impl(ctx):
+def _local_exec_impl(ctx):
     script_filename = "%s.sh" % ctx.attr.name
     output = ctx.actions.declare_file(script_filename)
 
@@ -56,9 +56,9 @@ def _dir_exec_impl(ctx):
         ]
     return ret
 
-def _dir_exec(test):
+def _local_exec(test):
     return rule(
-        implementation = _dir_exec_impl,
+        implementation = _local_exec_impl,
         test = test,
         executable = True,
         attrs = {
@@ -72,11 +72,11 @@ def _dir_exec(test):
         },
     )
 
-def dir_exec(_rule, name, cmd, test, deps = [], path = None, srcs = [], **kwargs):
+def local_exec(_rule, name, cmd, test, deps = [], path = None, srcs = [], **kwargs):
     if path == None:
         path = native.package_name()
     if (len(srcs) > 0):
-        dir_step(
+        local_step(
             name = "%s_lib" % name,
             deps = deps,
             cmd = "true",
@@ -94,21 +94,21 @@ def dir_exec(_rule, name, cmd, test, deps = [], path = None, srcs = [], **kwargs
         **kwargs
     )
 
-_dir_exec_test = _dir_exec(test = True)
+_local_exec_test = _local_exec(test = True)
 
-def dir_test(name, **kwargs):
-    dir_exec(
-        _rule = _dir_exec_test,
+def local_test(name, **kwargs):
+    local_exec(
+        _rule = _local_exec_test,
         name = name,
         test = True,
         **kwargs
     )
 
-_dir_exec_run = _dir_exec(test = False)
+_local_exec_run = _local_exec(test = False)
 
-def dir_run(name, **kwargs):
-    dir_exec(
-        _rule = _dir_exec_run,
+def local_run(name, **kwargs):
+    local_exec(
+        _rule = _local_exec_run,
         name = name,
         test = False,
         **kwargs
@@ -120,7 +120,7 @@ def make_env_cmd(env):
         for key, value in env.items()
     ])
 
-def _dir_step_impl(ctx):
+def _local_step_impl(ctx):
     """
     A rule that overlays a directory on top of another directory.
     """
@@ -257,8 +257,8 @@ def _dir_step_impl(ctx):
         ),
     ]
 
-_dir_step = rule(
-    implementation = _dir_step_impl,
+_local_step = rule(
+    implementation = _local_step_impl,
     attrs = {
         "cmd": attr.string(),
         "path": attr.string(mandatory = True),
@@ -269,7 +269,7 @@ _dir_step = rule(
     },
 )
 
-def _dir_step_no_transitive_deps_impl(ctx):
+def _local_step_no_transitive_deps_impl(ctx):
     prev = ctx.attr.prev
     return [
         DefaultInfo(
@@ -285,21 +285,21 @@ def _dir_step_no_transitive_deps_impl(ctx):
         ),
     ]
 
-_dir_step_no_transitive_deps = rule(
-    implementation = _dir_step_no_transitive_deps_impl,
+_local_step_no_transitive_deps = rule(
+    implementation = _local_step_no_transitive_deps_impl,
     attrs = {
         "prev": attr.label(allow_files = True),
     },
 )
 
-def dir_step(name, path = None, **kwargs):
+def local_step(name, path = None, **kwargs):
     if path == None:
         path = native.package_name()
         if path == "":
             path = "."
     transitive_label = "%s.transitive" % name
-    _dir_step_no_transitive_deps(name = name, prev = transitive_label)
-    _dir_step(
+    _local_step_no_transitive_deps(name = name, prev = transitive_label)
+    _local_step(
         name = transitive_label,
         path = path,
         **kwargs

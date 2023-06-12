@@ -1,6 +1,6 @@
-load("//:rules_local.bzl", "dir_run", "dir_step")
+load("//:rules_local.bzl", "local_run", "local_step")
 
-dir_step(
+local_step(
     name = "a",
     outs = [
         "$DIR_ROOT/foo",
@@ -9,7 +9,7 @@ dir_step(
     path = "a",
 )
 
-dir_step(
+local_step(
     name = "b",
     outs = [
         "$DIR_ROOT/foo",
@@ -19,7 +19,7 @@ dir_step(
     deps = [":a"],
 )
 
-dir_step(
+local_step(
     name = "c",
     outs = [
         "$DIR_ROOT/foo",
@@ -33,7 +33,7 @@ dir_step(
     ],
 )
 
-dir_step(
+local_step(
     name = "b_prime",
     outs = [
         "$DIR_ROOT/foo",

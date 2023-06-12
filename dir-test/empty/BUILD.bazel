@@ -1,6 +1,6 @@
-load("//:rules_local.bzl", "dir_run", "dir_step")
+load("//:rules_local.bzl", "local_run", "local_step")
 
-dir_run(
+local_run(
     name = "test",
     cmd = """
         echo $BUILD_WORKSPACE_DIRECTORY
@@ -10,7 +10,7 @@ dir_run(
     ],
 )
 
-dir_step(
+local_step(
     name = "no_op",
     cmd = "true",
 )
