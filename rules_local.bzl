@@ -6,41 +6,56 @@ DirInfo = provider(
 )
 
 def _local_exec_impl(ctx):
-    script_filename = "%s.sh" % ctx.attr.name
-    output = ctx.actions.declare_file(script_filename)
+    bootstrap_script = ctx.actions.declare_file("%s_bootstrap.sh" % ctx.attr.name)
+    script = ctx.actions.declare_file(ctx.attr.name)
 
     runfiles = ctx.runfiles(
+        files = [script, bootstrap_script],
         root_symlinks = depset(
             transitive = [
                 dep[DefaultInfo].default_runfiles.root_symlinks
                 for dep in ctx.attr.deps
             ],
+            order = "postorder",
         ),
     )
 
-    command = """
+    bootstrap_cmd = """
     #!/usr/bin/env bash
-    set -e
+    set -ex
+
+    echo "script_path: {script_path}"
+    script_path=$(realpath {script_path})
 
     export DIR_ROOT=$(realpath ../../)
     {env_cmd}
 
-    (cd $DIR_ROOT/{cwd}; {cmd})
+    mkdir -p $DIR_ROOT/{cwd}
+    (cd $DIR_ROOT/{cwd}; exec $script_path)
     """.format(
-        output = output.path,
+        script_path = script.short_path,
         env_cmd = make_env_cmd(ctx.attr.env),
         cwd = ctx.attr.cwd,
-        cmd = ctx.attr.cmd,
     ).strip()
 
     ctx.actions.write(
-        output = output,
-        content = command,
+        output = bootstrap_script,
+        content = bootstrap_cmd,
+        is_executable = True,
+    )
+
+    ctx.actions.write(
+        output = script,
+        content = ctx.attr.cmd,
         is_executable = True,
     )
 
     ret = [
-        DefaultInfo(executable = output, runfiles = runfiles),
+        DefaultInfo(
+            executable = bootstrap_script,
+            files = depset([bootstrap_script, script]),
+            runfiles = runfiles,
+        ),
     ]
     if (ctx.attr.test):
         ret = ret + [
@@ -135,13 +150,13 @@ def _local_step_impl(ctx):
 
     dep_dirs = [
         file.path
-        for file in depset(transitive = transitive_depsets).to_list()
+        for file in depset(transitive = transitive_depsets, order = "postorder").to_list()
     ]
 
     command = '''
     set -e
     OUTPUT_ROOT={output_root}
-
+    OUTPUT_ROOT_ABSOLUTE=$(realpath $OUTPUT_ROOT)
     export DIR_ROOT="$(realpath $OUTPUT_ROOT)"
     {env_cmd}
 
@@ -172,16 +187,17 @@ def _local_step_impl(ctx):
     CODE=$?
     set -e
 
-    REAL_OUTPUT_ROOT=$(realpath $OUTPUT_ROOT)
     raw_outs="{outs}"
-    outs=""
+
+    # TODO: Do some filtering here
+    # outs=""
     for raw_out in $raw_outs; do
         (cd $OUTPUT_ROOT/{cwd}; mkdir -p $raw_out)
-        out="$(cd $OUTPUT_ROOT/{cwd}; realpath --relative-to=$REAL_OUTPUT_ROOT $raw_out)"
-        outs="$outs $out"
+        # out="$(cd $OUTPUT_ROOT/{cwd}; realpath --relative-to=$OUTPUT_ROOT_ABSOLUTE $raw_out)"
+        # outs="$outs $out"
     done
 
-    ln -sfn $REAL_OUTPUT_ROOT {output}
+    ln -sfn $OUTPUT_ROOT_ABSOLUTE {output}
     exit $CODE
     '''.format(
         env_cmd = make_env_cmd(ctx.attr.env),
@@ -203,6 +219,7 @@ def _local_step_impl(ctx):
     inputs = depset(
         direct = [script] + ctx.files.srcs,
         transitive = transitive_depsets,
+        order = "postorder",
     )
 
     ctx.actions.run_shell(
@@ -232,10 +249,11 @@ def _local_step_impl(ctx):
                 dep[DefaultInfo].default_runfiles.root_symlinks
                 for dep in ctx.attr.deps
             ],
+            order = "postorder",
         ),
     )
 
-    transitive_deps_files = depset(transitive = transitive_depsets)
+    transitive_deps_files = depset(transitive = transitive_depsets, order = "postorder")
 
     return [
         DefaultInfo(

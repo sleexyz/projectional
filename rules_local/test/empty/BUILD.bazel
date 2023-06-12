@@ -2,9 +2,7 @@ load("//:rules_local.bzl", "local_run", "local_step")
 
 local_run(
     name = "test",
-    cmd = """
-        echo $BUILD_WORKSPACE_DIRECTORY
-    """,
+    cmd = "true",
     deps = [
         "no_op",
     ],
