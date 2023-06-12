@@ -1,0 +1,101 @@
+# Test that steps artifacts are overlaid in the correct order (post-order dep traversal), no matter the cwd.
+# Note that builds are NOT deterministic up to sibling order for sibling steps with no common deps.
+#
+# b
+# | \
+# |  b'
+#
+# is equivalent to
+#
+# b
+# | \
+# b' |
+#
+# but
+#
+# b b'
+#
+# is not equivalent to
+#
+# b' b
+
+load("//:rules_local.bzl", "local_step", "local_test")
+
+local_step(
+    name = "a",
+    outs = [
+        "$DIR_ROOT",
+    ],
+    cmd = "echo a >> $DIR_ROOT/log",
+    cwd = "a",
+)
+
+local_step(
+    name = "b",
+    outs = [
+        "$DIR_ROOT",
+    ],
+    cmd = "echo b >> $DIR_ROOT/log",
+    cwd = "b",
+    deps = [":a"],
+)
+
+local_step(
+    name = "b_1",
+    outs = [
+        "$DIR_ROOT/foo",
+    ],
+    cmd = "echo b_1 >> $DIR_ROOT/log",
+    cwd = "b",
+    deps = [":b"],
+)
+
+local_step(
+    name = "c_1",
+    outs = [
+        "$DIR_ROOT",
+    ],
+    cmd = "echo c >> $DIR_ROOT/log",
+    cwd = "c",
+    deps = [
+        ":b_1",
+    ] + [
+        ":b",
+    ],
+)
+
+local_test(
+    name = "test_1",
+    cmd = '''
+        set -ex
+        [[ $(cat $DIR_ROOT/log) == "a\nb\nb_1\nc" ]]
+    ''',
+    deps = [
+        ":c_1",
+    ],
+)
+
+local_step(
+    name = "c_2",
+    outs = [
+        "$DIR_ROOT",
+    ],
+    cmd = "echo c >> $DIR_ROOT/log",
+    cwd = "c",
+    deps = [
+        ":b",
+    ] + [
+        ":b_1",
+    ],
+)
+
+local_test(
+    name = "test_2",
+    cmd = '''
+        set -ex
+        [[ $(cat $DIR_ROOT/log) == "a\nb\nb_1\nc" ]]
+    ''',
+    deps = [
+        ":c_2",
+    ],
+)
