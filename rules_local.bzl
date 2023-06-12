@@ -1,9 +1,8 @@
 DirInfo = provider(
     fields = {
-        # TODO: rename cwd
-        "path": "path to the directory from workspace root",
-        "transitive_deps_files": "transitive files from deps",
-        "non_transitive_runfiles": "runfiles that are not transitive",
+        "cwd": "Working directory for commands. Defaults to the directory of the BUILD file.",
+        "transitive_deps_files": "Transitive files from deps.",
+        "non_transitive_runfiles": "Runfiles that are not transitive.",
     },
 )
 
@@ -31,11 +30,11 @@ def _local_exec_impl(ctx):
     export DIR_ROOT=$(realpath ../../)
     {env_cmd}
 
-    (cd $DIR_ROOT/{dir_path}; {cmd})
+    (cd $DIR_ROOT/{cwd}; {cmd})
     """.format(
         output = output.path,
         env_cmd = make_env_cmd(ctx.attr.env),
-        dir_path = ctx.attr.path,
+        cwd = ctx.attr.cwd,
         cmd = ctx.attr.cmd,
     ).strip()
 
@@ -64,7 +63,7 @@ def _local_exec(test):
         attrs = {
             "deps": attr.label_list(allow_files = True),
             "cmd": attr.string(),
-            "path": attr.string(),
+            "cwd": attr.string(),
             "test": attr.bool(),
             "env": attr.string_dict(),
             # HACK: Users shouldn't need to specify this.
@@ -72,15 +71,15 @@ def _local_exec(test):
         },
     )
 
-def local_exec(_rule, name, cmd, test, deps = [], path = None, srcs = [], **kwargs):
-    if path == None:
-        path = native.package_name()
+def local_exec(_rule, name, cmd, test, deps = [], cwd = None, srcs = [], **kwargs):
+    if cwd == None:
+        cwd = native.package_name()
     if (len(srcs) > 0):
         local_step(
             name = "%s_lib" % name,
             deps = deps,
             cmd = "true",
-            path = path,
+            cwd = cwd,
             srcs = srcs,
         )
         deps = ["%s_lib" % name]
@@ -89,7 +88,7 @@ def local_exec(_rule, name, cmd, test, deps = [], path = None, srcs = [], **kwar
         name = name,
         cmd = cmd,
         deps = deps,
-        path = path,
+        cwd = cwd,
         test = test,
         **kwargs
     )
@@ -124,11 +123,12 @@ def _local_step_impl(ctx):
     """
     A rule that overlays a directory on top of another directory.
     """
-    dir_path = ctx.attr.path
-    output_dir = "__overlays__/%s/%s.dir" % (ctx.attr.path, ctx.attr.name)
+    cwd = ctx.attr.cwd
+    # TODO: use qualified package name
+    output_dir = "__overlays__/%s/%s.dir" % (ctx.attr.cwd, ctx.attr.name)
     output = ctx.actions.declare_symlink(output_dir)
 
-    script = ctx.actions.declare_file("__overlays__/%s/%s.sh" % (ctx.attr.path, ctx.attr.name))
+    script = ctx.actions.declare_file("__overlays__/%s/%s.sh" % (ctx.attr.cwd, ctx.attr.name))
 
     transitive_depsets = [
         dep[DefaultInfo].files
@@ -151,7 +151,6 @@ def _local_step_impl(ctx):
     export DIR_ROOT="$(realpath $OUTPUT_ROOT)"
     {env_cmd}
 
-    # TODO: extract these in the right order
     for f in {dep_dirs}; do
         if [ -z "$f" ]; then
             continue
@@ -170,12 +169,12 @@ def _local_step_impl(ctx):
         cp -p $dep $OUTPUT_ROOT/$dep
     done
 
-    mkdir -p $OUTPUT_ROOT/{dir_path}
+    mkdir -p $OUTPUT_ROOT/{cwd}
 
     script_path=$(realpath {script_path})
 
     set +e
-    (cd $OUTPUT_ROOT/{dir_path}; exec $script_path)
+    (cd $OUTPUT_ROOT/{cwd}; exec $script_path)
     CODE=$?
     set -e
 
@@ -183,8 +182,8 @@ def _local_step_impl(ctx):
     raw_outs="{outs}"
     outs=""
     for raw_out in $raw_outs; do
-        (cd $OUTPUT_ROOT/{dir_path}; mkdir -p $raw_out)
-        out="$(cd $OUTPUT_ROOT/{dir_path}; realpath --relative-to=$REAL_OUTPUT_ROOT $raw_out)"
+        (cd $OUTPUT_ROOT/{cwd}; mkdir -p $raw_out)
+        out="$(cd $OUTPUT_ROOT/{cwd}; realpath --relative-to=$REAL_OUTPUT_ROOT $raw_out)"
         outs="$outs $out"
     done
 
@@ -193,8 +192,7 @@ def _local_step_impl(ctx):
     '''.format(
         env_cmd = make_env_cmd(ctx.attr.env),
         dep_dirs = " ".join(dep_dirs),
-        # TODO: rename cwd
-        dir_path = dir_path,
+        cwd = cwd,
         direct_deps = " ".join([file.path for file in ctx.files.srcs]),
         script_path = script.path,
         output = output.path,
@@ -230,7 +228,7 @@ def _local_step_impl(ctx):
 
     runfiles = ctx.runfiles(
         root_symlinks = {
-            "%s.dir" % ctx.attr.path: sym_output,
+            "%s.dir" % ctx.attr.cwd: sym_output,
         },
     )
     transitive_runfiles = ctx.runfiles(
@@ -251,7 +249,7 @@ def _local_step_impl(ctx):
             runfiles = transitive_runfiles,
         ),
         DirInfo(
-            path = ctx.attr.path,
+            cwd = ctx.attr.cwd,
             transitive_deps_files = transitive_deps_files,
             non_transitive_runfiles = runfiles,
         ),
@@ -261,7 +259,7 @@ _local_step = rule(
     implementation = _local_step_impl,
     attrs = {
         "cmd": attr.string(),
-        "path": attr.string(mandatory = True),
+        "cwd": attr.string(mandatory = True),
         "srcs": attr.label_list(allow_files = True),
         "deps": attr.label_list(allow_files = True),
         "env": attr.string_dict(),
@@ -278,7 +276,7 @@ def _local_step_no_transitive_deps_impl(ctx):
             runfiles = prev[DirInfo].non_transitive_runfiles,
         ),
         DirInfo(
-            path = prev[DirInfo].path,
+            cwd = prev[DirInfo].cwd,
             # Remove transitive deps
             transitive_deps_files = depset(),
             non_transitive_runfiles = prev[DirInfo].non_transitive_runfiles,
@@ -292,15 +290,15 @@ _local_step_no_transitive_deps = rule(
     },
 )
 
-def local_step(name, path = None, **kwargs):
-    if path == None:
-        path = native.package_name()
-        if path == "":
-            path = "."
+def local_step(name, cwd = None, **kwargs):
+    if cwd == None:
+        cwd = native.package_name()
+        if cwd == "":
+            cwd = "."
     transitive_label = "%s.transitive" % name
     _local_step_no_transitive_deps(name = name, prev = transitive_label)
     _local_step(
         name = transitive_label,
-        path = path,
+        cwd = cwd,
         **kwargs
     )

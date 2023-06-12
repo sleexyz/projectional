@@ -6,7 +6,7 @@ local_step(
         "$DIR_ROOT/foo",
     ],
     cmd = "mkdir -p $DIR_ROOT/foo && echo a > $DIR_ROOT/foo/a",
-    path = "a",
+    cwd = "a",
 )
 
 local_step(
@@ -15,7 +15,7 @@ local_step(
         "$DIR_ROOT/foo",
     ],
     cmd = "mkdir -p $DIR_ROOT/foo && echo b > $DIR_ROOT/foo/b && echo b > $DIR_ROOT/foo/a",
-    path = "b",
+    cwd = "b",
     deps = [":a"],
 )
 
@@ -25,7 +25,7 @@ local_step(
         "$DIR_ROOT/foo",
     ],
     cmd = "mkdir -p $DIR_ROOT/foo && echo c > $DIR_ROOT/foo/c",
-    path = "c",
+    cwd = "c",
     deps = [
         ":b_prime",
     ] + [
@@ -39,6 +39,6 @@ local_step(
         "$DIR_ROOT/foo",
     ],
     cmd = "mkdir -p $DIR_ROOT/foo && echo b_prime > $DIR_ROOT/foo/b",
-    path = "b",
+    cwd = "b",
     deps = [":b"],
 )
