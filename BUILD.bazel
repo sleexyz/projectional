@@ -1,4 +1,4 @@
-load("//:rules_local.bzl", "local_run", "local_step")
+load("//:rules_local/defs.bzl", "local_run", "local_step")
 
 package(default_visibility = ["//visibility:public"])
 
