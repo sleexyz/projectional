@@ -12,6 +12,7 @@ local_step(
         "package-lock.json",
     ],
     cmd = "npm install",
+    no_propagate_changes = True,
 )
 
 local_step(
@@ -25,11 +26,12 @@ local_step(
     ],
     cmd = "wasm-pack build --out-name index --dev",
     env = cargo_build_env,
+    no_propagate_changes = True,
     target_compatible_with = [
         "@platforms//cpu:wasm32",
     ],
     deps = [
-        "//puddlejumper:build.transitive",
+        "//puddlejumper:build",
     ],
 )
 

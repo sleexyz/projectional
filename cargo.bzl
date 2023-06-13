@@ -11,7 +11,7 @@ cargo_build_env = select_with_common({
     },
 }, {
     "CARGO_TARGET_DIR": "$DIR_ROOT/target",
-    "CARGO_TERM_VERBOSE": "true",
+    "CARGO_TERM_VERBOSE": "false",
     "CARGO_INCREMENTAL": "1",
     "PROFILE": "debug",
 })

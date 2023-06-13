@@ -3,9 +3,8 @@
 
 graph-deps:
     #!/usr/bin/env bash
-    # Treat ":foo.transitive" and ":foo" as the same node
-    QUERY='deps(//...) except deps(kind("_local_step_no_transitive_deps", //...), 0)'
-    bazel query --noimplicit_deps $QUERY --output graph | sed 's/\.transitive//g' | uniq > graph.dot
+    QUERY='deps(//...)'
+    bazel query --noimplicit_deps $QUERY --output graph > graph.dot
 
 list:
     #!/usr/bin/env just _recurse bash
