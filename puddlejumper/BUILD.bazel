@@ -27,7 +27,7 @@ local_step(
 )
 
 local_step(
-    name = "test_lib",
+    name = "test_no_run",
     outs = [
         ".",
         "$CARGO_TARGET_DIR",
@@ -41,5 +41,5 @@ local_test(
     name = "test",
     cmd = cargo_with_tree_sitter_features("test"),
     env = cargo_build_env,
-    deps = [":test_lib.transitive"],
+    deps = [":test_no_run.transitive"],
 )

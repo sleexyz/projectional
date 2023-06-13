@@ -68,7 +68,7 @@ local_test(
     name = "test_1",
     cmd = '''
         set -ex
-        [[ $(cat $DIR_ROOT/log) == "a\nb\nb_1\nc_1" ]]
+        [[ $(cat $DIR_ROOT/log) == "a\nb\nc_1" ]]
     ''',
     deps = [
         ":c_1",

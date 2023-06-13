@@ -22,14 +22,15 @@ def _local_exec_impl(ctx):
 
     bootstrap_cmd = """
     #!/usr/bin/env bash
-    set -ex
+    set -e
 
     echo "script_path: {script_path}"
     script_path=$(realpath {script_path})
 
-    export DIR_ROOT=$(realpath ../../)
+    export DIR_ROOT=$(realpath ../dir)
     {env_cmd}
 
+    chmod -R u+w $DIR_ROOT
     mkdir -p $DIR_ROOT/{cwd}
     (cd $DIR_ROOT/{cwd}; exec $script_path)
     """.format(
@@ -84,20 +85,20 @@ def _local_exec(test):
 def local_exec(_rule, name, cmd, test, deps = [], cwd = None, srcs = [], **kwargs):
     if cwd == None:
         cwd = native.package_name()
-    if (len(srcs) > 0):
-        local_step(
-            name = "%s_lib" % name,
-            deps = deps,
-            cmd = "true",
-            cwd = cwd,
-            srcs = srcs,
-        )
-        deps = ["%s_lib" % name]
+
+    local_step(
+        name = "%s_lib" % name,
+        deps = deps,
+        cmd = "true",
+        cwd = cwd,
+        srcs = srcs,
+    )
 
     _rule(
         name = name,
         cmd = cmd,
-        deps = deps,
+        # TODO: convert to label
+        deps = ["%s_lib" % name] ,
         cwd = cwd,
         test = test,
         **kwargs
@@ -135,7 +136,7 @@ def _local_step_impl(ctx):
     """
     cwd = ctx.attr.cwd
     output_dir = "__overlays__/%s/%s.dir" % (ctx.attr.package_name, ctx.attr.name)
-    output = ctx.actions.declare_symlink(output_dir)
+    output = ctx.actions.declare_directory(output_dir)
 
     script = ctx.actions.declare_file("__overlays__/%s/%s.sh" % (ctx.attr.cwd, ctx.attr.name))
 
@@ -155,18 +156,18 @@ def _local_step_impl(ctx):
 
     command = '''
     set -e
+
     OUTPUT_ROOT={output_root}
+    mkdir -p $OUTPUT_ROOT
+
     OUTPUT_ROOT_ABSOLUTE=$(realpath $OUTPUT_ROOT)
     export DIR_ROOT="$(realpath $OUTPUT_ROOT)"
     {env_cmd}
 
     for f in {dep_dirs}; do
-        if [ -z "$f" ]; then
-            continue
-        fi
-
         if [[ $f == *.dir ]]; then
             rsync -a $f/ $OUTPUT_ROOT/
+            chmod -R u+w $OUTPUT_ROOT
         else
             mkdir -p $OUTPUT_ROOT/$(dirname $f)
             ln -sf $(realpath $f) $OUTPUT_ROOT/$f
@@ -197,7 +198,8 @@ def _local_step_impl(ctx):
         # outs="$outs $out"
     done
 
-    ln -sfn $OUTPUT_ROOT_ABSOLUTE {output}
+    # ln -sfn $OUTPUT_ROOT_ABSOLUTE {output}
+    # rsync -a $OUTPUT_ROOT_ABSOLUTE {output}
     exit $CODE
     '''.format(
         env_cmd = make_env_cmd(ctx.attr.env),
@@ -206,7 +208,8 @@ def _local_step_impl(ctx):
         direct_deps = " ".join([file.path for file in ctx.files.srcs]),
         script_path = script.path,
         output = output.path,
-        output_root = output.path[:-(len(output_dir) + 1)],
+        # output_root = output.path[:-(len(output_dir) + 1)],
+        output_root = output.path,
         outs = " ".join(ctx.attr.outs),
     ).strip()
 
@@ -231,15 +234,16 @@ def _local_step_impl(ctx):
     )
 
     # HACK: The only way to create a dangling symlink is via ctx.actions.symlink
-    sym_output = ctx.actions.declare_file("%s.sym" % output_dir)
-    ctx.actions.symlink(
-        output = sym_output,
-        target_file = output,
-    )
+    # sym_output = ctx.actions.declare_file("%s.sym" % output_dir)
+    # ctx.actions.symlink(
+    #     output = sym_output,
+    #     target_file = output,
+    # )
 
     runfiles = ctx.runfiles(
         root_symlinks = {
-            "%s.dir" % ctx.attr.cwd: sym_output,
+            # "%s.dir" % ctx.attr.cwd: sym_output,
+            "dir": output,
         },
     )
     transitive_runfiles = ctx.runfiles(
