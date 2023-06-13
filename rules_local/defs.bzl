@@ -134,6 +134,7 @@ def _local_step_impl(ctx):
     cwd = ctx.attr.cwd
     output_dir = "__overlays__/%s/%s.dir" % (ctx.attr.package_name, ctx.attr.name)
     output = ctx.actions.declare_symlink(output_dir)
+    output_phony = ctx.actions.declare_file("%s.phony" % output_dir)
 
     script = ctx.actions.declare_file("__overlays__/%s/%s.sh" % (ctx.attr.cwd, ctx.attr.name))
 
@@ -157,8 +158,6 @@ def _local_step_impl(ctx):
     OUTPUT_ROOT_ABSOLUTE=$(realpath $OUTPUT_ROOT)
     export DIR_ROOT="$(realpath $OUTPUT_ROOT)"
     {env_cmd}
-
-    echo {dep_dirs}
 
     for f in {dep_dirs}; do
         if [[ $f == *.dir ]]; then
@@ -215,7 +214,9 @@ def _local_step_impl(ctx):
         # (cd $OUTPUT_ROOT/{cwd}; ln -sfn $(realpath $raw_out) $OUTPUT_ABSOLUTE/$out)
     done
 
+    rm -f {output}
     ln -sfn $OUTPUT_ROOT_ABSOLUTE {output}
+    echo $RANDOM > {output_phony}
     exit $CODE
     '''.format(
         env_cmd = make_env_cmd(ctx.attr.env),
@@ -224,6 +225,7 @@ def _local_step_impl(ctx):
         direct_deps = " ".join([file.path for file in ctx.files.srcs]),
         script_path = script.path,
         output = output.path,
+        output_phony = output_phony.path,
         output_root = output.path[:-(len(output_dir) + 1)],
         outs = " ".join(ctx.attr.outs),
     ).strip()
@@ -240,17 +242,18 @@ def _local_step_impl(ctx):
         order = "postorder",
     )
 
+    # HACK: This artifact is only used to declare the symlink in the build graph.
+    # This artifact is otherwise ignored.
+    sym_output = ctx.actions.declare_file("%s.sym" % output_dir)
+
     ctx.actions.run_shell(
         inputs = inputs,
         env = ctx.attr.env,
-        outputs = [output],
+        outputs = [output, output_phony],
         command = command,
         use_default_shell_env = True,
     )
 
-    # HACK: This artifact is only used to declare the symlink in the build graph.
-    # This artifact is otherwise ignored.
-    sym_output = ctx.actions.declare_file("%s.sym" % output_dir)
     ctx.actions.symlink(
         output = sym_output,
         target_file = output,
@@ -259,7 +262,8 @@ def _local_step_impl(ctx):
     runfiles = ctx.runfiles(
         root_symlinks = {
             # "%s.dir" % ctx.attr.cwd: sym_output,
-            output_dir: sym_output,
+            # output_dir: output,
+            "%s.sym" % output_dir: sym_output,
         },
     )
     runfiles = ctx.runfiles(
@@ -276,10 +280,10 @@ def _local_step_impl(ctx):
     transitive_deps_files = depset(transitive = transitive_depsets, order = "postorder")
 
     files = [output]
-    # if not ctx.attr.no_propagate_changes:
-    #     files += [sym_output]
-    # else:
-    #     print("Not propagating changes to %s" % output.path)
+    if not ctx.attr.no_propagate_changes:
+        files += [output_phony]
+    else:
+        print("Not propagating changes to %s" % output.path)
 
     return [
         DefaultInfo(

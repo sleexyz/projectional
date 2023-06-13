@@ -12,7 +12,6 @@ local_step(
         "package-lock.json",
     ],
     cmd = "npm install",
-    no_propagate_changes = True,
 )
 
 local_step(
