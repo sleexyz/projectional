@@ -19,7 +19,7 @@
 #
 # b' b
 
-load("//:rules_local.bzl", "local_step", "local_test")
+load("//:rules_local/defs.bzl", "local_step", "local_test")
 
 local_step(
     name = "a",
@@ -55,7 +55,7 @@ local_step(
     outs = [
         "$DIR_ROOT",
     ],
-    cmd = "echo c >> $DIR_ROOT/log",
+    cmd = "echo c_1 >> $DIR_ROOT/log",
     cwd = "c",
     deps = [
         ":b_1",
@@ -68,7 +68,7 @@ local_test(
     name = "test_1",
     cmd = '''
         set -ex
-        [[ $(cat $DIR_ROOT/log) == "a\nb\nb_1\nc" ]]
+        [[ $(cat $DIR_ROOT/log) == "a\nb\nb_1\nc_1" ]]
     ''',
     deps = [
         ":c_1",
@@ -80,7 +80,7 @@ local_step(
     outs = [
         "$DIR_ROOT",
     ],
-    cmd = "echo c >> $DIR_ROOT/log",
+    cmd = "echo c_2 >> $DIR_ROOT/log",
     cwd = "c",
     deps = [
         ":b",
@@ -93,7 +93,7 @@ local_test(
     name = "test_2",
     cmd = '''
         set -ex
-        [[ $(cat $DIR_ROOT/log) == "a\nb\nb_1\nc" ]]
+        [[ $(cat $DIR_ROOT/log) == "a\nb\nb_1\nc_2" ]]
     ''',
     deps = [
         ":c_2",
