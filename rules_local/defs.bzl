@@ -1,13 +1,12 @@
 DirInfo = provider(
     fields = {
         "transitive_deps_files": "Transitive files from deps.",
-        "non_transitive_runfiles": "Runfiles that are not transitive.",
     },
 )
 
 def _local_exec_impl(ctx):
-    bootstrap_script = ctx.actions.declare_file("%s_bootstrap.sh" % ctx.attr.name)
-    script = ctx.actions.declare_file(ctx.attr.name)
+    bootstrap_script = ctx.actions.declare_file("__%s_bootstrap__.sh" % ctx.attr.name)
+    script = ctx.actions.declare_file("__%s__" % ctx.attr.name)
 
     runfiles = ctx.runfiles(
         files = [script, bootstrap_script],
@@ -24,7 +23,6 @@ def _local_exec_impl(ctx):
     #!/usr/bin/env bash
     set -ex
 
-    echo "script_path: {script_path}"
     script_path=$(realpath {script_path})
 
     export DIR_ROOT=$(realpath ../../)
@@ -140,12 +138,12 @@ def _local_step_impl(ctx):
     script = ctx.actions.declare_file("__overlays__/%s/%s.sh" % (ctx.attr.cwd, ctx.attr.name))
 
     transitive_depsets = [
-        dep[DefaultInfo].files
-        for dep in ctx.attr.deps
-    ] + [
         dep[DirInfo].transitive_deps_files
         for dep in ctx.attr.deps
         if DirInfo in dep
+    ] + [
+        dep[DefaultInfo].files
+        for dep in ctx.attr.deps
     ]
 
     dep_dirs = [
@@ -160,13 +158,26 @@ def _local_step_impl(ctx):
     export DIR_ROOT="$(realpath $OUTPUT_ROOT)"
     {env_cmd}
 
-    for f in {dep_dirs}; do
-        if [ -z "$f" ]; then
-            continue
-        fi
+    echo {dep_dirs}
 
+    for f in {dep_dirs}; do
         if [[ $f == *.dir ]]; then
-            rsync -a $f/ $OUTPUT_ROOT/
+            if [[ $(realpath $f) != $(realpath $OUTPUT_ROOT) ]]; then
+                echo "f: $f"
+                YELLOW='\033[1;33m'
+                CLEAR='\033[0m'
+                # set -x
+                # echo -e "${{YELLOW}}"
+                # (cd $(realpath $f); find  .)
+                # rsync -avv --force $f/ $OUTPUT_ROOT/
+                rsync -a $f/ $OUTPUT_ROOT/
+                # lndir $(realpath $f) $OUTPUT_ROOT/
+                # cp -as $f $OUTPUT_ROOT/
+                # echo -e "${{CLEAR}}"
+                # set +x
+            fi
+        elif [[ $f == *.dir.sym ]]; then
+            true
         else
             mkdir -p $OUTPUT_ROOT/$(dirname $f)
             ln -sf $(realpath $f) $OUTPUT_ROOT/$f
@@ -176,25 +187,32 @@ def _local_step_impl(ctx):
     for dep in {direct_deps}; do
         mkdir -p $OUTPUT_ROOT/$(dirname $dep)
         cp -p $dep $OUTPUT_ROOT/$dep
+        # ln -sfn $(realpath $dep) $OUTPUT_ROOT/$dep
+        # rsync -a --force $(realpath $f)/ $OUTPUT_ROOT/
     done
 
     mkdir -p $OUTPUT_ROOT/{cwd}
 
     script_path=$(realpath {script_path})
 
-    set +e
+    # set +e
+    # (cd $OUTPUT_ROOT/; find .)
     (cd $OUTPUT_ROOT/{cwd}; exec $script_path)
     CODE=$?
-    set -e
+    # set -e
 
     raw_outs="{outs}"
 
+    OUTPUT_ABSOLUTE=$(realpath {output})
     # TODO: Do some filtering here
     # outs=""
     for raw_out in $raw_outs; do
         (cd $OUTPUT_ROOT/{cwd}; mkdir -p $raw_out)
-        # out="$(cd $OUTPUT_ROOT/{cwd}; realpath --relative-to=$OUTPUT_ROOT_ABSOLUTE $raw_out)"
+        out="$(cd $OUTPUT_ROOT/{cwd}; realpath --relative-to=$OUTPUT_ROOT_ABSOLUTE $raw_out)"
         # outs="$outs $out"
+        # (cd $OUTPUT_ROOT/{cwd}; rsync -avv --force $(realpath $raw_out)/ $OUTPUT_ABSOLUTE/$out)
+        # (cd $OUTPUT_ROOT/{cwd}; cp -as $(realpath $raw_out) $OUTPUT_ABSOLUTE/$out)
+        # (cd $OUTPUT_ROOT/{cwd}; ln -sfn $(realpath $raw_out) $OUTPUT_ABSOLUTE/$out)
     done
 
     ln -sfn $OUTPUT_ROOT_ABSOLUTE {output}
@@ -230,7 +248,8 @@ def _local_step_impl(ctx):
         use_default_shell_env = True,
     )
 
-    # HACK: The only way to create a dangling symlink is via ctx.actions.symlink
+    # HACK: This artifact is only used to declare the symlink in the build graph.
+    # This artifact is otherwise ignored.
     sym_output = ctx.actions.declare_file("%s.sym" % output_dir)
     ctx.actions.symlink(
         output = sym_output,
@@ -239,10 +258,11 @@ def _local_step_impl(ctx):
 
     runfiles = ctx.runfiles(
         root_symlinks = {
-            "%s.dir" % ctx.attr.cwd: sym_output,
+            # "%s.dir" % ctx.attr.cwd: sym_output,
+            output_dir: sym_output,
         },
     )
-    transitive_runfiles = ctx.runfiles(
+    runfiles = ctx.runfiles(
         root_symlinks = depset(
             direct = runfiles.root_symlinks.to_list(),
             transitive = [
@@ -255,14 +275,19 @@ def _local_step_impl(ctx):
 
     transitive_deps_files = depset(transitive = transitive_depsets, order = "postorder")
 
+    files = [output]
+    # if not ctx.attr.no_propagate_changes:
+    #     files += [sym_output]
+    # else:
+    #     print("Not propagating changes to %s" % output.path)
+
     return [
         DefaultInfo(
-            files = depset([output]),
-            runfiles = transitive_runfiles,
+            files = depset(files),
+            runfiles = runfiles,
         ),
         DirInfo(
             transitive_deps_files = transitive_deps_files,
-            non_transitive_runfiles = runfiles,
         ),
     ]
 
@@ -270,6 +295,7 @@ _local_step = rule(
     implementation = _local_step_impl,
     attrs = {
         "cmd": attr.string(),
+        "no_propagate_changes": attr.bool(default = False),
         "cwd": attr.string(mandatory = True),
         "package_name": attr.string(mandatory = True),
         "srcs": attr.label_list(allow_files = True),
@@ -279,39 +305,14 @@ _local_step = rule(
     },
 )
 
-def _local_step_no_transitive_deps_impl(ctx):
-    prev = ctx.attr.prev
-    return [
-        DefaultInfo(
-            files = prev[DefaultInfo].files,
-            # Remove transitive runfiles
-            runfiles = prev[DirInfo].non_transitive_runfiles,
-        ),
-        DirInfo(
-            # Remove transitive deps
-            transitive_deps_files = depset(),
-            non_transitive_runfiles = prev[DirInfo].non_transitive_runfiles,
-        ),
-    ]
-
-_local_step_no_transitive_deps = rule(
-    implementation = _local_step_no_transitive_deps_impl,
-    attrs = {
-        "prev": attr.label(allow_files = True),
-    },
-)
-
 def local_step(name, cwd = None, **kwargs):
-    package_name = native.package_name()
     if cwd == None:
-        cwd = package_name
+        cwd = native.package_name()
         if cwd == "":
             cwd = "."
-    transitive_label = "%s.transitive" % name
-    _local_step_no_transitive_deps(name = name, prev = transitive_label)
     _local_step(
-        name = transitive_label,
+        name = name,
         cwd = cwd,
-        package_name = package_name,
+        package_name = native.package_name(),
         **kwargs
     )

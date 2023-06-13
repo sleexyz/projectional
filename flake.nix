@@ -83,6 +83,7 @@
             bazel-watcher
             sccache
             rsync
+            xorg.lndir
           ];
           shellHook = ''
             export PATH=$(pwd)/puddlejumper/target/release:$PATH

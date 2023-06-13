@@ -48,8 +48,12 @@ That being said, one can imagine shoring up the hermeticity step by step, of whi
 
 ## Unanswered questions
 
+1. What if two parallel processes try to grab Cargo.lock? Any way to tell the scheduler to not parallelize like that?
 1. What about *immutable*, persistent build workspaces? Any easy way to get this?
-1. Can we make non-commutative build operations effectively commutative by defining an inverse? Aka, generate a diff per step, and then undo the diff.
+1. ~Can we make non-commutative build operations effectively commutative by defining an inverse? Aka, generate a diff per step, and then undo the diff.~
+    Well, when would you play the diff?
+
+
 1. How does rules_hybrid work with remote build caching?
 1. How does rules_hybrid interact with a codebase with traditional bazel rules?
     1. What role can rules_hybrid play for a migration of a codebase to bazel?
