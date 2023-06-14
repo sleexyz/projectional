@@ -1,7 +1,7 @@
 # Test that steps artifacts are overlaid in the correct order (post-order dep traversal).
 # Note that builds are NOT deterministic up to sibling order.
 
-load("//:rules_local/defs.bzl", "local_run", "local_step", "local_test")
+load("//:rules_local/defs.bzl", "local_step", "local_test")
 
 local_step(
     name = "a",
