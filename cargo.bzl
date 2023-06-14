@@ -1,4 +1,15 @@
+"""
+Macros for building with cargo for this project.
+"""
+
 def select_with_common(select_dict, common):
+    """
+    Allows defaults for select
+
+    Args:
+        select_dict: dict of select values
+        common: dict of common values for each exelect branch
+    """
     return select(
         {key: dict(common, **value) for key, value in select_dict.items()},
     )

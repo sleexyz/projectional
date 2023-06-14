@@ -1,5 +1,3 @@
-load("//:rules_local/defs.bzl", "local_run", "local_step")
-
 package(default_visibility = ["//visibility:public"])
 
 platform(
