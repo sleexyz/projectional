@@ -1,1 +1,4 @@
 .direnv
+bazel-puddlejumper
+bazel-out
+bazel-bin
