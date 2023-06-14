@@ -2,8 +2,8 @@ load("//:rules_local/defs.bzl", "local_run", "local_step")
 
 local_step(
     name = "a",
+    srcs = ["a.txt"],
     cmd = "cat a.txt > a",
-    srcs = ["a.txt"]
 )
 
 local_step(
@@ -25,7 +25,7 @@ local_step(
 # Seems like symlink outputs do not propagate in watch mode
 local_run(
     name = "debug",
-    cmd = "ag .",
+    cmd = "echo $PWD",
     # tags = ["ibazel_notify_changes"],
     deps = [
         ":c",
