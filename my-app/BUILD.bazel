@@ -1,5 +1,5 @@
 load("//:rules_local/defs.bzl", "local_run", "local_step")
-load("//:cargo.bzl", "cargo", "cargo_build_env")
+load("//:cargo.bzl", "cargo_build_env")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -38,12 +38,13 @@ local_step(
     name = "build",
     srcs = glob([
         "js/**/*",
+    ]) + [
         "index.html",
-        "vite.config.ts",
-        "tsconfig.node.json",
-        "tsconfig.json",
         "launch_editor.sh",
-    ]),
+        "tsconfig.json",
+        "tsconfig.node.json",
+        "vite.config.ts",
+    ],
     cmd = "npm run build",
     deps = [
         ":npm_install",

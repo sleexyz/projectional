@@ -1,4 +1,9 @@
+"""
+Rules optimized for local development with existing toolchains.
+"""
+
 DirInfo = provider(
+    "Information about a directory.",
     fields = {
         "transitive_deps_files": "Transitive files from deps.",
     },
@@ -63,7 +68,7 @@ def _local_exec_impl(ctx):
         ]
     return ret
 
-def _local_exec(test):
+def _make_local_exec(test):
     return rule(
         implementation = _local_exec_impl,
         test = test,
@@ -79,7 +84,20 @@ def _local_exec(test):
         },
     )
 
-def local_exec(_rule, name, cmd, test, deps = [], cwd = None, srcs = [], **kwargs):
+def _local_exec(_rule_impl, name, cmd, test, deps = [], cwd = None, srcs = [], **kwargs):
+    """
+    A rule that executes a command in a directory.
+
+    Args:
+        _rule_impl: The underlying rule implementation.
+        name: The name of the rule.
+        cmd: The command to execute.
+        test: Whether or not this is a test.
+        deps: The dependencies of the rule.
+        cwd: The directory to execute the command in. Ignored for run rules.
+        srcs: The sources of the rule.
+        **kwargs: Additional arguments to pass to the underlying rule implementation.
+    """
     if cwd == None:
         cwd = native.package_name()
     if (len(srcs) > 0):
@@ -92,7 +110,7 @@ def local_exec(_rule, name, cmd, test, deps = [], cwd = None, srcs = [], **kwarg
         )
         deps = ["%s_lib" % name]
 
-    _rule(
+    _rule_impl(
         name = name,
         cmd = cmd,
         deps = deps,
@@ -101,21 +119,21 @@ def local_exec(_rule, name, cmd, test, deps = [], cwd = None, srcs = [], **kwarg
         **kwargs
     )
 
-_local_exec_test = _local_exec(test = True)
+_local_exec_test = _make_local_exec(test = True)
 
 def local_test(name, **kwargs):
-    local_exec(
-        _rule = _local_exec_test,
+    _local_exec(
+        _rule_impl = _local_exec_test,
         name = name,
         test = True,
         **kwargs
     )
 
-_local_exec_run = _local_exec(test = False)
+_local_exec_run = _make_local_exec(test = False)
 
 def local_run(name, **kwargs):
-    local_exec(
-        _rule = _local_exec_run,
+    _local_exec(
+        _rule_impl = _local_exec_run,
         name = name,
         test = False,
         **kwargs
@@ -281,9 +299,7 @@ def _local_step_impl(ctx):
 
     files = [output]
     if not ctx.attr.no_propagate_changes:
-        files += [output_phony]
-    else:
-        print("Not propagating changes to %s" % output.path)
+        files.append(output_phony)
 
     return [
         DefaultInfo(
@@ -310,6 +326,14 @@ _local_step = rule(
 )
 
 def local_step(name, cwd = None, **kwargs):
+    """
+    Run a command.
+
+    Args:
+        name: A descriptive name for this step.
+        cwd: The working directory to run the command in.
+        **kwargs: Additional arguments to pass to the underlying rule.
+    """
     if cwd == None:
         cwd = native.package_name()
         if cwd == "":
