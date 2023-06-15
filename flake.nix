@@ -6,7 +6,7 @@
   };
 
   outputs = { self, nixpkgs, flake-utils, rust-overlay }:
-    flake-utils.lib.eachDefaultSystem (system:
+    flake-utils.lib.eachSystem ["aarch64-darwin"] (system:
       let
         pkgs = import nixpkgs {
           inherit system;
@@ -47,44 +47,64 @@
           list-files | ${pkgs.entr}/bin/entr -cs "${pkgs.just}/bin/just $@"
         '';
 
+        dev_packages = with pkgs; [
+          # Web stuff:
+          nodejs-18_x
+
+          # General dev stuff:
+          just
+          just-watch
+          entr
+          silver-searcher
+
+          # Rust:
+          rustInfo.drvs
+          rustfmt
+
+          # Tree-sitter:
+          tree-sitter
+          graphviz
+
+          # Wasm cross-compilation:
+          wasm-pack
+          wasm-bindgen-cli
+          lld
+          llvmPackages.llvm
+          llvmPackages.clang
+          clang-wasi32
+
+          # Bazel:
+          bazel
+          buildifier
+          bazel-watcher
+          sccache
+          rsync
+          xorg.lndir
+        ];
       in
       with pkgs;
       {
+        packages = {
+          puddlejumper = pkgs.stdenv.mkDerivation {
+            name = "puddlejumper";
+            src = ./.;
+            # unpackPhase = ":";
+            nativeBuildInputs = [ dev_packages ];
+            buildPhase = ''
+              bazel build //...
+            '';
+            checkPhase = ''
+              bazel test //...
+            '';
+            # installPhase = ''
+            #   mkdir -p $out/bin
+            #   puddlejumper $out/bin
+            # '';
+            doCheck = true;
+          };
+        };
         devShell = mkShell {
-          nativeBuildInputs = [
-            # Web stuff:
-            nodejs-18_x
-
-            # General dev stuff:
-            just
-            just-watch
-            entr
-            silver-searcher
-
-            # Rust:
-            rustInfo.drvs
-            rustfmt
-
-            # Tree-sitter:
-            tree-sitter
-            graphviz
-
-            # Wasm cross-compilation:
-            wasm-pack
-            wasm-bindgen-cli
-            lld
-            llvmPackages.llvm
-            llvmPackages.clang
-            clang-wasi32
-
-            # Bazel:
-            bazel
-            buildifier
-            bazel-watcher
-            sccache
-            rsync
-            xorg.lndir
-          ];
+          nativeBuildInputs = [ dev_packages ];
           shellHook = ''
             export PATH=$(pwd)/puddlejumper/target/release:$PATH
           '';
