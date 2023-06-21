@@ -10,10 +10,10 @@
 			"type": "extensionHost",
 			"request": "launch",
 			"args": [
-				"--extensionDevelopmentPath=${workspaceFolder}/projectional"
+				"--extensionDevelopmentPath=${workspaceFolder}/bazel-bin/projectional/projectional"
 			],
 			"outFiles": [
-				"${workspaceFolder}/projectional/dist/**/*.js"
+				"${workspaceFolder}/bazel-bin/projectional/projectional/dist/**/*.js"
 			],
 			"preLaunchTask": "${defaultBuildTask}"
 		},
