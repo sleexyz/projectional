@@ -1,0 +1,11 @@
+steps:
+  - label: ":bazel: Build"
+    key: build
+    commands:
+      - bazel build //...
+
+  - label: ":bazel: Test"
+    commands:
+      - bazel test //...
+    key: test
+    depends_on: build
