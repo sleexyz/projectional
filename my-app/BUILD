@@ -1,11 +1,11 @@
-load("//:rules_local/defs.bzl", "local_run", "local_step")
+load("//:rules_hybrid/defs.bzl", "hybrid_run", "hybrid_step")
 load("//:cargo.bzl", "cargo_build_env")
 
 package(default_visibility = ["//visibility:public"])
 
 exports_files(["Cargo.toml"])
 
-local_step(
+hybrid_step(
     name = "npm_install",
     srcs = [
         "package.json",
@@ -14,7 +14,7 @@ local_step(
     cmd = "npm install",
 )
 
-local_step(
+hybrid_step(
     name = "wasm_pack_build",
     srcs = glob([
         "src/**/*",
@@ -34,7 +34,7 @@ local_step(
     ],
 )
 
-local_step(
+hybrid_step(
     name = "build",
     srcs = glob([
         "js/**/*",
@@ -52,7 +52,7 @@ local_step(
     ],
 )
 
-local_run(
+hybrid_run(
     name = "run",
     cmd = "npm run start",
     tags = ["ibazel_notify_changes"],
