@@ -1,5 +1,5 @@
-use ::puddlejumper::puddlejumper::node::{Context, NodeId};
-use puddlejumper::puddlejumper;
+use ::puddlejumper::node::{Context, NodeId};
+use puddlejumper;
 use std::io::{Error, ErrorKind};
 use wasm_bindgen::prelude::*;
 use web_sys::console;
