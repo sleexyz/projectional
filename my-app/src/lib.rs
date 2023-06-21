@@ -31,7 +31,7 @@ pub fn main_js() -> Result<(), JsValue> {
             out: &mut out,
         },
     );
-    unsafe { console::log_1(&JsValue::from_str(&String::from_utf8(out).unwrap())) };
+    console::log_1(&JsValue::from_str(&String::from_utf8(out).unwrap()));
     Ok(())
 }
 
