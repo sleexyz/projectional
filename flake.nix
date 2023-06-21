@@ -89,7 +89,6 @@
             export PATH=$(pwd)/puddlejumper/target/release:$PATH
           '';
         };
-        RUST_SRC_PATH = rustInfo.path;
       }
     );
 }
