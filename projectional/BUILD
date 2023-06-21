@@ -9,16 +9,31 @@ hybrid_step(
     cmd = "npm install",
 )
 
-hybrid_step(
-    name = "build",
-    srcs = glob([
+filegroup(
+    name = "sources",
+    srcs =  glob([
         "media/**/*",
         "src/**/*",
     ]) + [
         "webpack.config.js",
         "tsconfig.json",
     ],
+)
+
+hybrid_step(
+    name = "build",
+    srcs = [ ":sources" ],
     cmd = "npm run compile",
+    deps = [
+        ":npm_install",
+    ],
+)
+
+hybrid_run(
+    name = "run",
+    srcs = [ ":sources" ],
+    cmd = "npm run watch",
+    tags = ["ibazel_notify_changes"],
     deps = [
         ":npm_install",
     ],
