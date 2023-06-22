@@ -26,7 +26,7 @@ def _hybrid_exec_impl(ctx):
 
     bootstrap_cmd = """
     #!/usr/bin/env bash
-    set -ex
+    set -e
 
     script_path=$(realpath {script_path})
 
@@ -180,7 +180,6 @@ def _hybrid_step_impl(ctx):
     for f in {dep_dirs}; do
         if [[ $f == *.dir ]]; then
             if [[ $(realpath $f) != $(realpath $OUTPUT_ROOT) ]]; then
-                echo "f: $f"
                 YELLOW='\033[1;33m'
                 CLEAR='\033[0m'
                 # set -x
@@ -203,7 +202,8 @@ def _hybrid_step_impl(ctx):
 
     for dep in {direct_deps}; do
         mkdir -p $OUTPUT_ROOT/$(dirname $dep)
-        cp -p $dep $OUTPUT_ROOT/$dep
+        # install -p $dep $OUTPUT_ROOT/$dep
+        ln -fn $(realpath $dep) $OUTPUT_ROOT/$dep
         # ln -sfn $(realpath $dep) $OUTPUT_ROOT/$dep
         # rsync -a --force $(realpath $f)/ $OUTPUT_ROOT/
     done
@@ -232,13 +232,27 @@ def _hybrid_step_impl(ctx):
         # (cd $OUTPUT_ROOT/{cwd}; ln -sfn $(realpath $raw_out) $OUTPUT_ABSOLUTE/$out)
     done
 
+    # Get WORKSPACE
+    BUILD_SRC_FULL_RESOLVED=$(readlink -f -- "{package_name}/{_build_src_full}")
+    CWD_WORKSPACE=$(dirname $BUILD_SRC_FULL_RESOLVED)
+    WORKSPACE=${{CWD_WORKSPACE%/{package_name}}}
+
+    for target in {write_symlinks}; do
+        unlink $WORKSPACE/{cwd}/$target || true
+        (cd $OUTPUT_ROOT/{cwd}; ln -sf $(realpath $target) $WORKSPACE/{cwd}/$target)
+    done
+
     rm -f {output}
     ln -sfn $OUTPUT_ROOT_ABSOLUTE {output}
     echo $RANDOM > {output_phony}
     exit $CODE
     '''.format(
+        package_name = ctx.attr.package_name,
         env_cmd = make_env_cmd(ctx.attr.env),
         dep_dirs = " ".join(dep_dirs),
+        _build_src_full = ctx.files._build_src[0].path,
+        _build_src_short= ctx.files._build_src[0].short_path,
+        write_symlinks = " ".join(ctx.attr.write_symlinks),
         cwd = cwd,
         direct_deps = " ".join([file.path for file in ctx.files.srcs]),
         script_path = script.path,
@@ -270,6 +284,11 @@ def _hybrid_step_impl(ctx):
         outputs = [output, output_phony],
         command = command,
         use_default_shell_env = True,
+        execution_requirements = {
+            "no-sandbox": "1",
+            "no-remote": "1",
+            "local": "1",
+        },
     )
 
     ctx.actions.symlink(
@@ -321,6 +340,8 @@ _hybrid_step = rule(
         "srcs": attr.label_list(allow_files = True),
         "deps": attr.label_list(allow_files = True),
         "env": attr.string_dict(),
+        "_build_src": attr.label(allow_files = True, default = "BUILD"),
+        "write_symlinks": attr.string_list(default = []),
         "outs": attr.string_list(default = ["."]),
     },
 )
@@ -331,13 +352,14 @@ def hybrid_step(name, cwd = None, **kwargs):
 
     Args:
         name: A descriptive name for this step.
-        cwd: The working directory to run the command in.
+        cwd: The working directory to run the command in, relative to the workspace root.
         **kwargs: Additional arguments to pass to the underlying rule.
     """
     if cwd == None:
         cwd = native.package_name()
-        if cwd == "":
+        if cwd == "": # If root package
             cwd = "."
+
     _hybrid_step(
         name = name,
         cwd = cwd,
