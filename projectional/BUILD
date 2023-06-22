@@ -6,6 +6,9 @@ hybrid_step(
         "package.json",
         "package-lock.json",
     ],
+    workspace_symlinks = [
+        "node_modules",
+    ],
     cmd = "npm install",
 )
 
@@ -17,6 +20,9 @@ hybrid_step(
     ]) + [
         "webpack.config.js",
         "tsconfig.json",
+    ],
+    workspace_symlinks = [
+        "dist",
     ],
     cmd = "npm run compile",
     deps = [

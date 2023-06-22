@@ -3,7 +3,7 @@ load("//:rules_hybrid/defs.bzl", "hybrid_step", "hybrid_test")
 hybrid_step(
     name = "foo.txt",
     cmd = "echo foo > foo.txt",
-    write_symlinks = ["foo.txt"],
+    workspace_symlinks = ["foo.txt"],
 )
 
 hybrid_step(
@@ -12,7 +12,7 @@ hybrid_step(
     mkdir -p some_dir
     echo bar > some_dir/bar.txt
     """,
-    write_symlinks = ["some_dir"],
+    workspace_symlinks = ["some_dir"],
 )
 
 hybrid_test(
@@ -36,7 +36,7 @@ hybrid_step(
     name = "asdf.txt",
     cwd = "%s/some_other_dir" % package_name(),
     cmd = "echo asdf > asdf.txt",
-    write_symlinks = ["asdf.txt"],
+    workspace_symlinks = ["asdf.txt"],
 )
 
 hybrid_test(

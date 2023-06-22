@@ -13,6 +13,12 @@ hybrid_step(
         "grammar.js",
         "src/scanner.cc",
     ],
+    workspace_symlinks = [
+        "src/parser.c",
+        "src/node-types.json",
+        "src/grammar.json",
+        "src/tree_sitter",
+    ],
     cmd = "tree-sitter generate",
     deps = [
         "//:cargo_workspace",
