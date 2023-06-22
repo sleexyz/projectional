@@ -11,6 +11,9 @@ hybrid_step(
         "package.json",
         "package-lock.json",
     ],
+    workspace_symlinks = [
+        "node_modules",
+    ],
     cmd = "npm install",
 )
 
@@ -24,6 +27,9 @@ hybrid_step(
         "$CARGO_TARGET_DIR",
     ],
     cmd = "wasm-pack build --out-name index --dev",
+    workspace_symlinks = [
+        "pkg",
+    ],
     env = cargo_build_env,
     no_propagate_changes = True,
     target_compatible_with = [
@@ -44,6 +50,9 @@ hybrid_step(
         "tsconfig.json",
         "tsconfig.node.json",
         "vite.config.ts",
+    ],
+    workspace_symlinks = [
+        "dist",
     ],
     cmd = "npm run build",
     deps = [

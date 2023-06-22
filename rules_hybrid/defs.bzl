@@ -237,8 +237,10 @@ def _hybrid_step_impl(ctx):
     CWD_WORKSPACE=$(dirname $BUILD_SRC_FULL_RESOLVED)
     WORKSPACE=${{CWD_WORKSPACE%/{package_name}}}
 
-    for target in {write_symlinks}; do
-        unlink $WORKSPACE/{cwd}/$target || true
+    for target in {workspace_symlinks}; do
+        if [ -f $WORKSPACE/{cwd}/$target ] || [ -d $WORKSPACE/{cwd}/$target ]; then
+            unlink $WORKSPACE/{cwd}/$target
+        fi
         (cd $OUTPUT_ROOT/{cwd}; ln -sf $(realpath $target) $WORKSPACE/{cwd}/$target)
     done
 
@@ -252,7 +254,7 @@ def _hybrid_step_impl(ctx):
         dep_dirs = " ".join(dep_dirs),
         _build_src_full = ctx.files._build_src[0].path,
         _build_src_short= ctx.files._build_src[0].short_path,
-        write_symlinks = " ".join(ctx.attr.write_symlinks),
+        workspace_symlinks = " ".join(ctx.attr.workspace_symlinks),
         cwd = cwd,
         direct_deps = " ".join([file.path for file in ctx.files.srcs]),
         script_path = script.path,
@@ -341,7 +343,7 @@ _hybrid_step = rule(
         "deps": attr.label_list(allow_files = True),
         "env": attr.string_dict(),
         "_build_src": attr.label(allow_files = True, default = "BUILD"),
-        "write_symlinks": attr.string_list(default = []),
+        "workspace_symlinks": attr.string_list(default = []),
         "outs": attr.string_list(default = ["."]),
     },
 )
