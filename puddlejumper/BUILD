@@ -1,4 +1,4 @@
-load("//:rules_hybrid/defs.bzl", "hybrid_step", "hybrid_test")
+load("//:rules_hybrid/defs.bzl", "hybrid_run", "hybrid_step", "hybrid_test")
 load("//:cargo.bzl", "cargo_build_env", "cargo_with_tree_sitter_features")
 
 package(default_visibility = ["//visibility:public"])
@@ -42,4 +42,10 @@ hybrid_test(
     cmd = cargo_with_tree_sitter_features("test"),
     env = cargo_build_env,
     deps = [":test_lib"],
+)
+
+hybrid_run(
+    name = "puddlejumper",
+    cmd = "../target/debug/puddlejumper $@",
+    deps = [":build"],
 )

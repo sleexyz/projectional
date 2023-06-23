@@ -34,7 +34,7 @@ def _hybrid_exec_impl(ctx):
     {env_cmd}
 
     mkdir -p $DIR_ROOT/{cwd}
-    (cd $DIR_ROOT/{cwd}; exec $script_path)
+    (cd $DIR_ROOT/{cwd}; exec $script_path $@)
     """.format(
         script_path = script.short_path,
         env_cmd = make_env_cmd(ctx.attr.env),
