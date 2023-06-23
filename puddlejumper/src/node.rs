@@ -1,6 +1,8 @@
 pub mod printer;
 pub mod extract_priorities;
 
+use std::{collections::HashMap, time::SystemTime};
+
 use id_arena::{Arena, Id};
 
 #[derive(Debug)]
@@ -31,4 +33,10 @@ pub enum Node {
 #[derive(Debug)]
 pub struct Context {
     pub arena: Arena<Node>,
+    pub metadata: HashMap<NodeId, NodeMetadata>,
+}
+
+#[derive(Debug)]
+pub struct NodeMetadata {
+    pub created_at: SystemTime,
 }

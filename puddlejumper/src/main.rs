@@ -4,7 +4,7 @@ use std::fs;
 use std::io::{Error, ErrorKind};
 
 fn print_usage() {
-    println!("Usage: cargo run -- [print | debug_print | parse | print_prioritized] <file_path>");
+    println!("Usage: cargo run -- [debug_print | parse | print_prioritized] <file_path>");
 }
 
 fn main() {
@@ -35,16 +35,6 @@ fn main() {
     // Parse and print the code
     let p = puddlejumper::parser::Parser::new(code);
     match command {
-        "print" => {
-            let result = p.pretty_print(&mut std::io::stdout(), 0);
-            match result {
-                Ok(_) => (),
-                Err(error) => {
-                    println!("Error pretty printing file: {}", error);
-                    return;
-                }
-            }
-        }
         "debug_print" => {
             let result = p.debug_print(&mut std::io::stdout());
             match result {
@@ -59,8 +49,12 @@ fn main() {
             let result = p.load_document();
             match result {
                 Some((ctx, node)) => {
-                    println!("{:#?}", ctx.arena[node]);
-                    println!("File parsed successfully");
+                    for (id, node) in ctx.arena.iter() {
+                        println!("{:?}:\n{:?}", id.index(), node);
+                        ctx.metadata.get(&id).map(|metadata| {
+                            println!("  {:?}", metadata);
+                        });
+                    }
                     return;
                 }
                 None => {
