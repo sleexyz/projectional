@@ -8,6 +8,18 @@ exports_files([
 ])
 
 hybrid_step(
+    name = "npm_install",
+    srcs = [
+        "package.json",
+        "package-lock.json",
+    ],
+    cmd = "npm install",
+    workspace_symlinks = [
+        "node_modules",
+    ],
+)
+
+hybrid_step(
     name = "generate",
     srcs = [
         "grammar.js",
@@ -21,12 +33,13 @@ hybrid_step(
     ],
     cmd = "tree-sitter generate",
     deps = [
+        ":npm_install",
         "//:cargo_workspace",
     ],
 )
 
 hybrid_test(
-    name = "test_grammar",
+    name = "grammar_test",
     srcs = glob([
         "test/**/*",
     ]),

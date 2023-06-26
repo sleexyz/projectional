@@ -1,3 +1,3 @@
-build --spawn_strategy=local
+build --spawn_strategy=local --action_env=NIX_LDFLAGS --action_env=NIX_CC_WRAPPER_TARGET_HOST_aarch64_apple_darwin
 test --spawn_strategy=local
 run --spawn_strategy=local
