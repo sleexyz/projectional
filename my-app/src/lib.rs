@@ -36,12 +36,12 @@ pub fn main_js() -> Result<(), JsValue> {
 }
 
 fn parse(code: &str) -> Option<(Context, NodeId)> {
-    let p = puddlejumper::parser::Parser::new(code.into());
+    let p = puddlejumper::parser::Parser::new(code.into(), None);
     p.load_document()
 }
 
 fn print_prioritized(code: &str) -> Option<String> {
-    let p = puddlejumper::parser::Parser::new(code.into());
+    let p = puddlejumper::parser::Parser::new(code.into(), None);
     let mut output = Vec::new();
     p.load_document()
         .ok_or(Error::new(ErrorKind::Other, "Error parsing file"))

@@ -33,7 +33,7 @@ fn main() {
     };
 
     // Parse and print the code
-    let p = puddlejumper::parser::Parser::new(code);
+    let p = puddlejumper::parser::Parser::new(code, tree_sitter_puddlejumper::language());
     match command {
         "debug_print" => {
             let result = p.debug_print(&mut std::io::stdout());
@@ -48,7 +48,7 @@ fn main() {
         "parse" => {
             let result = p.load_document();
             match result {
-                Some((ctx, node)) => {
+                Some((ctx, _node)) => {
                     for (id, node) in ctx.arena.iter() {
                         println!("{:?}:\n{:?}", id.index(), node);
                         ctx.metadata.get(&id).map(|metadata| {

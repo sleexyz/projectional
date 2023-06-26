@@ -26,22 +26,22 @@ hybrid_step(
     ],
 )
 
-hybrid_step(
-    name = "test_lib",
-    outs = [
-        ".",
-        "$CARGO_TARGET_DIR",
-    ],
-    cmd = cargo_with_tree_sitter_features("test --no-run"),
-    env = cargo_build_env,
-    deps = [":build"],
-)
+# hybrid_step(
+#     name = "test_lib",
+#     outs = [
+#         ".",
+#         "$CARGO_TARGET_DIR",
+#     ],
+#     cmd = cargo_with_tree_sitter_features("test --no-run"),
+#     env = cargo_build_env,
+#     deps = [":build"],
+# )
 
 hybrid_test(
     name = "test",
-    cmd = cargo_with_tree_sitter_features("test"),
+    cmd = cargo_with_tree_sitter_features("test --color=always parser"),
     env = cargo_build_env,
-    deps = [":test_lib"],
+    deps = [":build"],
 )
 
 hybrid_run(
