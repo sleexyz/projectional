@@ -39,7 +39,7 @@ hybrid_step(
 
 hybrid_test(
     name = "test",
-    cmd = cargo_with_tree_sitter_features("test --color=always parser"),
+    cmd = cargo_with_tree_sitter_features("test --color=always"),
     env = cargo_build_env,
     deps = [":build"],
 )
