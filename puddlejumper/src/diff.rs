@@ -159,6 +159,28 @@ mod tests {
     }
 
     #[test]
+    fn test_diff_simple_addition_line() {
+        let before = r#"h"#;
+
+        let after = r#"h
+e"#;
+
+        let diff = compute_diff(before, after);
+        assert_eq!(
+            &diff.changes,
+            &vec![Change {
+                hunk_before: "",
+                hunk_after: "\ne",
+                before_bytes: 1..1,
+                after_bytes: 1..3,
+                start_position: tree_sitter::Point { row: 0, column: 1 },
+                old_end_position: tree_sitter::Point { row: 0, column: 1 },
+                new_end_position: tree_sitter::Point { row: 1, column: 1 },
+            },]
+        );
+    }
+
+    #[test]
     fn test_diff_addition() {
         let before = r#"hello"#;
 
