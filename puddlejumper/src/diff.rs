@@ -12,7 +12,6 @@ pub struct Diff {
 pub struct Change {
     pub before_bytes: Range<usize>,
     pub after_bytes: Range<usize>,
-    pub after_bytes_trimmed: Range<usize>,
     pub start_position: tree_sitter::Point,
     pub old_end_position: tree_sitter::Point,
     pub new_end_position: tree_sitter::Point,
@@ -43,7 +42,7 @@ impl<'a> TokenSource for BytesWrapper<'a> {
 }
 
 impl Change {
-    fn get_hunk<'a>(&'a self, code_before: &'a str, code_after: &'a str) -> (&'a str, &'a str) {
+    fn _get_hunk<'a>(&'a self, code_before: &'a str, code_after: &'a str) -> (&'a str, &'a str) {
         (
             &code_before[self.before_bytes.clone()],
             &code_after[self.after_bytes.clone()],
@@ -52,14 +51,14 @@ impl Change {
 }
 
 impl Diff {
-    fn get_hunks<'a>(
+    fn _get_hunks<'a>(
         &'a self,
         code_before: &'a str,
         code_after: &'a str,
     ) -> Vec<(&'a str, &'a str)> {
         self.changes
             .iter()
-            .map(|change| change.get_hunk(code_before, code_after))
+            .map(|change| change._get_hunk(code_before, code_after))
             .collect()
     }
 }
@@ -120,18 +119,6 @@ pub fn compute_diff(before: &str, after: &str) -> Diff {
         let before_bytes = before_bytes.start as usize..before_bytes.end as usize;
         let after_bytes = after_bytes.start as usize..after_bytes.end as usize;
 
-        let mut after_bytes_start_trimmed_offset: usize = 0;
-        for i in 0..after_bytes.len() {
-            if after.as_bytes()[after_bytes.start + i] == b'\n' {
-                after_bytes_start_trimmed_offset += 1;
-                continue;
-            }
-            break;
-        }
-
-        let after_bytes_trimmed =
-            after_bytes.start + after_bytes_start_trimmed_offset..after_bytes.end as usize;
-
         let start_position = after_token_points[after_bytes.start];
 
         let old_row_diff =
@@ -154,7 +141,6 @@ pub fn compute_diff(before: &str, after: &str) -> Diff {
         changes.push(Change {
             before_bytes,
             after_bytes,
-            after_bytes_trimmed,
             start_position,
             old_end_position,
             new_end_position,
@@ -179,13 +165,12 @@ mod tests {
             &vec![Change {
                 before_bytes: 1..1,
                 after_bytes: 1..2,
-                after_bytes_trimmed: 1..2,
                 start_position: tree_sitter::Point { row: 0, column: 1 },
                 old_end_position: tree_sitter::Point { row: 0, column: 1 },
                 new_end_position: tree_sitter::Point { row: 0, column: 2 },
             },]
         );
-        assert_eq!(&diff.get_hunks(before, after), &vec![("", "e")]);
+        assert_eq!(&diff._get_hunks(before, after), &vec![("", "e")]);
     }
 
     #[test]
@@ -199,13 +184,12 @@ e"#;
             &vec![Change {
                 before_bytes: 1..1,
                 after_bytes: 1..3,
-                after_bytes_trimmed: 2..3,
                 start_position: tree_sitter::Point { row: 0, column: 1 },
                 old_end_position: tree_sitter::Point { row: 0, column: 1 },
                 new_end_position: tree_sitter::Point { row: 1, column: 1 },
             },]
         );
-        assert_eq!(&diff.get_hunks(before, after), &vec![("", "\ne")]);
+        assert_eq!(&diff._get_hunks(before, after), &vec![("", "\ne")]);
     }
 
     #[test]
@@ -219,13 +203,12 @@ world"#;
             &vec![Change {
                 before_bytes: 5..5,
                 after_bytes: 5..11,
-                after_bytes_trimmed: 6..11,
                 start_position: tree_sitter::Point { row: 0, column: 5 },
                 old_end_position: tree_sitter::Point { row: 0, column: 5 },
                 new_end_position: tree_sitter::Point { row: 1, column: 5 },
             },]
         );
-        assert_eq!(&diff.get_hunks(before, after), &vec![("", "\nworld")]);
+        assert_eq!(&diff._get_hunks(before, after), &vec![("", "\nworld")]);
     }
 
     #[test]
@@ -240,13 +223,12 @@ world"#;
             &vec![Change {
                 before_bytes: 5..11,
                 after_bytes: 5..5,
-                after_bytes_trimmed: 5..5,
                 start_position: tree_sitter::Point { row: 0, column: 5 },
                 old_end_position: tree_sitter::Point { row: 1, column: 5 },
                 new_end_position: tree_sitter::Point { row: 0, column: 5 },
             },]
         );
-        assert_eq!(&diff.get_hunks(before, after), &vec![("\nworld", "")]);
+        assert_eq!(&diff._get_hunks(before, after), &vec![("\nworld", "")]);
     }
 
     #[test]
@@ -275,7 +257,6 @@ fn foo() -> Bar {
                 Change {
                     before_bytes: 0..0,
                     after_bytes: 0..15,
-                    after_bytes_trimmed: 0..15,
                     start_position: tree_sitter::Point { row: 0, column: 0 },
                     old_end_position: tree_sitter::Point { row: 0, column: 0 },
                     new_end_position: tree_sitter::Point { row: 1, column: 0 },
@@ -283,7 +264,6 @@ fn foo() -> Bar {
                 Change {
                     before_bytes: 81..81,
                     after_bytes: 96..120,
-                    after_bytes_trimmed: 96..120,
                     start_position: tree_sitter::Point { row: 4, column: 27 },
                     old_end_position: tree_sitter::Point { row: 4, column: 27 },
                     new_end_position: tree_sitter::Point { row: 5, column: 22 },
@@ -291,7 +271,6 @@ fn foo() -> Bar {
                 Change {
                     before_bytes: 83..83,
                     after_bytes: 122..130,
-                    after_bytes_trimmed: 123..130,
                     start_position: tree_sitter::Point { row: 6, column: 1 },
                     old_end_position: tree_sitter::Point { row: 6, column: 1 },
                     new_end_position: tree_sitter::Point { row: 8, column: 0 },
@@ -299,7 +278,7 @@ fn foo() -> Bar {
             ]
         );
         assert_eq!(
-            &diff.get_hunks(before, after),
+            &diff._get_hunks(before, after),
             &vec![
                 ("", "// lorem ipsum\n"),
                 ("", ";\n    println!(\"{foo}\");"),
