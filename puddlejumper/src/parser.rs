@@ -1,9 +1,6 @@
 use std::ops::Range;
-use std::{collections::HashMap, time::SystemTime};
 
 use super::diff;
-use super::node::*;
-use id_arena::Arena;
 use indexmap:: IndexSet;
 use serde_json;
 
@@ -154,120 +151,10 @@ impl Parser {
         return debug_print(&self.tree.root_node(), &self.text, out);
     }
 
-    fn get_text(&self, n: tree_sitter::Node) -> &str {
+    pub fn get_text(&self, n: tree_sitter::Node) -> &str {
         return &self.text[n.start_byte()..n.end_byte()];
     }
 
-    pub fn load_document(&self) -> Option<(Context, NodeId)> {
-        let mut context = Context {
-            arena: Arena::new(),
-            metadata: HashMap::new(),
-        };
-        let id = self.load(&self.tree.root_node(), &mut context)?;
-        let now = SystemTime::now();
-
-        for (id, _node) in context.arena.iter() {
-            let metadata = NodeMetadata { created_at: now };
-            context.metadata.insert(id, metadata);
-        }
-
-        return Some((context, id));
-    }
-
-    pub fn load(&self, t_node: &tree_sitter::Node, context: &mut Context) -> Option<NodeId> {
-        if t_node.kind() == "document" {
-            let mut children: Vec<NodeId> = Vec::new();
-            for child in t_node.children_by_field_name("children", &mut t_node.walk()) {
-                self.load(&child, context).map(|node_id| {
-                    children.push(node_id);
-                });
-            }
-            return Some(context.arena.alloc(Node::Document { children }));
-        }
-        if t_node.kind() == "node" {
-            let binding: Option<String> = t_node
-                .child_by_field_name("binding")
-                .and_then(|binding: tree_sitter::Node| {
-                    return binding.child_by_field_name("identifier");
-                })
-                .map(|identifier: tree_sitter::Node| {
-                    return self.get_text(identifier).to_string();
-                });
-            let content: Option<Content> =
-                t_node
-                    .child_by_field_name("content")
-                    .and_then(|n: tree_sitter::Node| {
-                        if n.kind() == "content" {
-                            return Some(Content::Content(self.get_text(n).to_string()));
-                        }
-                        if n.kind() == "ref" {
-                            return Some(Content::Ref(self.get_text(n).to_string()));
-                        }
-                        return None;
-                    });
-            let mut children: Vec<NodeId> = Vec::new();
-            t_node
-                .child_by_field_name("children")
-                .map(|child: tree_sitter::Node| {
-                    let cursor = &mut child.walk();
-                    cursor.goto_first_child();
-                    loop {
-                        let n = cursor.node();
-                        self.load(&n, context).map(|node| {
-                            children.push(node);
-                        });
-                        if !cursor.goto_next_sibling() {
-                            break;
-                        }
-                    }
-                });
-            return Some(context.arena.alloc(Node::Node {
-                binding,
-                content,
-                children,
-            }));
-        }
-        if t_node.kind() == "block" {
-            let binding: Option<String> = t_node
-                .child_by_field_name("binding")
-                .and_then(|binding: tree_sitter::Node| {
-                    return binding.child_by_field_name("identifier");
-                })
-                .map(|identifier: tree_sitter::Node| {
-                    return self.get_text(identifier).to_string();
-                });
-            let header: Option<NodeId> =
-                t_node
-                    .child_by_field_name("header")
-                    .and_then(|child: tree_sitter::Node| {
-                        return self.load(&child, context);
-                    });
-            let mut children: Vec<NodeId> = Vec::new();
-            t_node
-                .child_by_field_name("children")
-                .map(|child: tree_sitter::Node| {
-                    let cursor = &mut child.walk();
-                    cursor.goto_first_child();
-                    loop {
-                        let n = cursor.node();
-                        self.load(&n, context).map(|node_id| {
-                            children.push(node_id);
-                        });
-                        if !cursor.goto_next_sibling() {
-                            break;
-                        }
-                    }
-                });
-            return header.map(|header| {
-                return context.arena.alloc(Node::Block {
-                    binding,
-                    header,
-                    children,
-                });
-            });
-        }
-        return None;
-    }
 
     // pub fn debug_updates2(&self, updates: &Vec<Update>) -> Vec<&str> {
     //     let mut result = Vec::new();

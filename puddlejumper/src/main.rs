@@ -46,9 +46,10 @@ fn main() {
             }
         }
         "parse" => {
-            let result = p.load_document();
+            let mut ctx = puddlejumper::node::Context::new();
+            let result = ctx.load_document(&p);
             match result {
-                Some((ctx, _node)) => {
+                Some(_node) => {
                     for (id, node) in ctx.arena.iter() {
                         println!("{:?}:\n{:?}", id.index(), node);
                         ctx.metadata.get(&id).map(|metadata| {
@@ -64,10 +65,11 @@ fn main() {
             }
         }
         "print_prioritized" => {
-            let result = p
-                .load_document()
+            let mut ctx = puddlejumper::node::Context::new();
+            let result = ctx
+                .load_document(&p)
                 .ok_or(Error::new(ErrorKind::Other, "Error parsing file"))
-                .and_then(|(mut ctx, node)| {
+                .and_then(|node| {
                     let list = ctx.make_prioritized_list(node);
                     return ctx.pretty_print(
                         list,
