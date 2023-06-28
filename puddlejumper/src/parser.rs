@@ -20,9 +20,38 @@ pub struct Parser {
     pub tree: tree_sitter::Tree,
 }
 
+pub struct Updates {
+    pub updates: Vec<Update>,
+}
+
+impl Updates {
+    fn get_changed_nodes(&self) -> Vec<tree_sitter::Node> {
+        return self
+            .updates
+            .iter()
+            .flat_map(|update| update.get_changed_nodes())
+            .collect::<Vec<_>>();
+    }
+}
+
 pub struct Update {
+    tree: tree_sitter::Tree,
     change: diff::Change,
     changed_ranges: Vec<tree_sitter::Range>,
+}
+
+impl Update {
+    fn get_changed_nodes(&self) -> Vec<tree_sitter::Node> {
+        let start = self.change.after_bytes_trimmed.start as usize;
+        let end = self.change.after_bytes_trimmed.end as usize;
+        println!("start: {}, end: {}", start, end);
+        println!("tree: {:?}", self.tree.root_node());
+        self.tree
+            .root_node()
+            .descendant_for_byte_range(start, end)
+            .into_iter()
+            .collect()
+    }
 }
 
 impl Parser {
@@ -57,7 +86,7 @@ impl Parser {
         edit
     }
 
-    pub fn update(&mut self, text_new: String) -> Vec<Update> {
+    pub fn update(&mut self, text_new: String) -> Updates {
         let text_old = self.text.clone();
         let diff = diff::compute_diff(text_old.as_str(), text_new.as_str());
         let mut updates = Vec::new();
@@ -68,32 +97,33 @@ impl Parser {
                 &text_old[change.before_bytes.end..]
             );
 
+            // println!("text_intermediate:\n{}", text_intermediate);
+
             // Prepare old tree
             self.perform_edit(&change);
 
             // Parse new tree
             let new_tree = self
                 .parser
-                .parse(text_intermediate.clone(), Some(&self.tree))
+                .parse(text_intermediate, Some(&self.tree))
                 .unwrap();
 
             // Compare old and new tree
             let changed_ranges = self.tree.changed_ranges(&new_tree).collect::<Vec<_>>();
-            // let mut new_changed_ranges = get_changed_nodes(&self.tree, false);
 
             let update = Update {
+                tree: new_tree.clone(),
                 change,
                 changed_ranges,
             };
 
             updates.push(update);
-
             // changed_ranges.append(&mut new_changed_ranges.as_mut());
 
             self.tree = new_tree;
         }
         self.text = text_new;
-        return updates;
+        return Updates { updates };
     }
 
     pub fn debug_print(&self, out: &mut dyn std::io::Write) -> Result<(), std::io::Error> {
@@ -215,9 +245,19 @@ impl Parser {
         return None;
     }
 
-    pub fn debug_updates(&self, updates: &Vec<Update>) -> Vec<&str> {
+    // pub fn debug_updates2(&self, updates: &Vec<Update>) -> Vec<&str> {
+    //     let mut result = Vec::new();
+    //     for update in updates {
+    //         for range in &update.reverse_changed_ranges {
+    //             result.push(&self.text[range.start_byte..range.end_byte]);
+    //         }
+    //     }
+    //     result
+    // }
+
+    pub fn debug_updates(&self, updates: &Updates) -> Vec<&str> {
         let mut result = Vec::new();
-        for update in updates {
+        for update in &updates.updates {
             for range in &update.changed_ranges {
                 result.push(&self.text[range.start_byte..range.end_byte]);
             }
@@ -269,16 +309,16 @@ fn debug_print(
     }
 }
 
-// pub fn get_changed_nodes(tree: &tree_sitter::Tree, bubble_up: bool) -> Vec<tree_sitter::Range> {
+// pub fn get_changed_nodes(tree: &tree_sitter::Tree, bubble_up: bool) -> Vec<tree_sitter::Node> {
 //     let mut changed_nodes = Vec::new();
 //     get_changed_nodes_rec(&tree.root_node(), bubble_up, &mut changed_nodes);
 //     return changed_nodes
 // }
 
-// pub fn get_changed_nodes_rec(node: &tree_sitter::Node, bubble_up: bool, changed_nodes: &mut Vec<tree_sitter::Range>) -> bool  {
+// pub fn get_changed_nodes_rec<'a>(node: &tree_sitter::Node<'a>, bubble_up: bool, changed_nodes: &mut Vec<tree_sitter::Node<'a>>) -> bool  {
 //     if node.child_count() == 0 {
 //         if node.has_changes() {
-//             changed_nodes.push(node.range());
+//             changed_nodes.push(*node);
 //             return true;
 //         } else {
 //             return false;
@@ -290,7 +330,7 @@ fn debug_print(
 //         children_changed |= get_changed_nodes_rec(&child, bubble_up, changed_nodes);
 //     }
 //     if bubble_up && children_changed {
-//         changed_nodes.push(node.range());
+//         changed_nodes.push(*node);
 //     }
 //     return children_changed;
 // }
@@ -313,7 +353,7 @@ mod tests {
         let code2 = String::from("hello\nworld");
         let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
         let changes = parser.update(code2.clone());
-        assert_eq!(changes.len(), 0);
+        assert_eq!(changes.updates.len(), 0);
         assert_eq!(parser.get_text(parser.tree.root_node()), code2.clone());
     }
 
@@ -324,6 +364,14 @@ mod tests {
         let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
         let changes = parser.update(code2.clone());
         assert_eq!(parser.debug_updates(&changes), vec!["\nfoo"]);
+        assert_eq!(
+            changes
+                .get_changed_nodes()
+                .iter()
+                .map(|node| { parser.get_text(*node) })
+                .collect::<Vec<_>>(),
+            vec!["foo"] as Vec<&str>
+        );
     }
 
     #[test]
@@ -334,6 +382,14 @@ mod tests {
         let changes = parser.update(code2.clone());
         assert_eq!(parser.get_text(parser.tree.root_node()), code2.clone());
         assert_eq!(parser.debug_updates(&changes), vec!["\n  world"]);
+        assert_eq!(
+            changes
+                .get_changed_nodes()
+                .iter()
+                .map(|node| { parser.get_text(*node) })
+                .collect::<Vec<_>>(),
+            vec!["\n  world"] as Vec<&str>
+        );
     }
 
     #[test]
@@ -346,6 +402,14 @@ mod tests {
         assert_eq!(
             parser.debug_updates(&changes),
             vec!["\n  world", "\n  @foo"]
+        );
+        assert_eq!(
+            changes
+                .get_changed_nodes()
+                .iter()
+                .map(|node| { parser.get_text(*node) })
+                .collect::<Vec<_>>(),
+            vec!["\n  world", "\n  @foo"] as Vec<&str>
         );
     }
 
