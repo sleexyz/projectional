@@ -48,6 +48,26 @@ impl Change {
             &code_after[self.after_bytes.clone()],
         )
     }
+
+    pub fn input_edit(&self) -> tree_sitter::InputEdit {
+        let start_byte = self.after_bytes.start as usize;
+        let old_end_byte =
+            (self.after_bytes.start + self.before_bytes.end - self.before_bytes.start) as usize;
+        let new_end_byte = self.after_bytes.end as usize;
+
+        let start_position = self.start_position;
+        let old_end_position = self.old_end_position;
+        let new_end_position = self.new_end_position;
+
+        tree_sitter::InputEdit {
+            start_byte,
+            old_end_byte,
+            new_end_byte,
+            start_position,
+            old_end_position,
+            new_end_position,
+        }
+    }
 }
 
 impl Diff {
