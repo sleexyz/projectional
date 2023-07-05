@@ -1,7 +1,4 @@
-use std::ops::Range;
-
-use super::diff;
-use indexmap::IndexSet;
+use super::text_diff;
 use serde_json;
 
 #[cfg(all(feature = "native", feature = "wasm"))]
@@ -36,16 +33,14 @@ impl Parser {
 
     pub fn update(&mut self, text_new: String) {
         let text_old = self.text.clone();
-        let diff = diff::compute_diff(text_old.as_str(), text_new.as_str());
+        let diff = text_diff::compute_diff(text_old.as_str(), text_new.as_str());
         for change in diff.changes {
             let text_intermediate = format!(
                 "{}{}",
                 &text_new[0..change.after_bytes.end],
                 &text_old[change.before_bytes.end..]
             );
-
-            &self.tree.edit(&change.input_edit());
-
+            self.tree.edit(&change.input_edit());
             let new_tree = self
                 .parser
                 .parse(text_intermediate, Some(&self.tree))
