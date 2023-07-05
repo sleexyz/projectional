@@ -6,6 +6,7 @@ use imara_diff::{diff, Algorithm};
 #[derive(Debug, PartialEq)]
 pub struct Diff {
     pub changes: Vec<Change>,
+    pub reverse_changes: Vec<Change>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -48,6 +49,27 @@ impl Change {
             &code_after[self.after_bytes.clone()],
         )
     }
+
+    pub fn input_edit(&self) -> tree_sitter::InputEdit {
+        let start_byte = self.after_bytes.start as usize;
+        let old_end_byte =
+            (self.after_bytes.start + self.before_bytes.end - self.before_bytes.start) as usize;
+        let new_end_byte = self.after_bytes.end as usize;
+
+        let start_position = self.start_position;
+        let old_end_position = self.old_end_position;
+        let new_end_position = self.new_end_position;
+
+        let edit = tree_sitter::InputEdit {
+            start_byte,
+            old_end_byte,
+            new_end_byte,
+            start_position,
+            old_end_position,
+            new_end_position,
+        };
+        edit
+    }
 }
 
 impl Diff {
@@ -65,6 +87,7 @@ impl Diff {
 
 pub fn compute_diff(before: &str, after: &str) -> Diff {
     let mut changes = Vec::new();
+    let mut reverse_changes = Vec::new();
 
     let before_tokens = BytesWrapper::new(before);
     let after_tokens = BytesWrapper::new(after);
@@ -115,7 +138,7 @@ pub fn compute_diff(before: &str, after: &str) -> Diff {
             ))
             .collect();
 
-    let sink = |before_bytes: Range<u32>, after_bytes: Range<u32>| {
+    let sink = |before_bytes: &Range<u32>, after_bytes: &Range<u32>, before_token_points: &Vec<tree_sitter::Point>, after_token_points: &Vec<tree_sitter::Point>, changes: &mut Vec<Change>| {
         let before_bytes = before_bytes.start as usize..before_bytes.end as usize;
         let after_bytes = after_bytes.start as usize..after_bytes.end as usize;
 
@@ -147,8 +170,11 @@ pub fn compute_diff(before: &str, after: &str) -> Diff {
         })
     };
 
-    let _diff = diff(Algorithm::Histogram, &input, sink);
-    return Diff { changes };
+    let _diff = diff(Algorithm::Histogram, &input, |before, after| {
+        sink(&before, &after, &before_token_points, &after_token_points, &mut changes);
+        sink(&after, &before, &after_token_points, &before_token_points, &mut reverse_changes);
+    });
+    return Diff { changes, reverse_changes };
 }
 
 #[cfg(test)]

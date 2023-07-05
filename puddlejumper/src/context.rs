@@ -118,3 +118,41 @@ impl Context {
         return None;
     }
 }
+
+
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+
+//     #[test]
+//     fn test_update() {
+//         let code1 = String::from("hello\nworld");
+//         let code2 = String::from("hello\nwarld");
+//         let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
+
+//         parser.debug_print(&mut std::io::stdout()).unwrap();
+//         println!("");
+
+//         let updates = parser.update(code2.clone());
+
+//         // for update in &updates.updates {
+//         //     // println!("update: {:#?}", update.change);
+//         //     let nodes = get_changed_nodes2(&update.tree_old, false);
+//         //     println!("nodes: {:?}", nodes);
+//         //     // for node in &nodes {
+//         //     //     debug_print(node, &code2.as_str(), &mut std::io::stdout()).unwrap();
+//         //     // }
+//         // }
+
+//         assert_eq!(parser.get_text(parser.tree.root_node()), code2.clone());
+
+//         // parser.debug_print(&mut std::io::stdout()).unwrap();
+
+//         updates.get_changed_nodes().iter().for_each(|node_change| {
+//             let NodeChange { old, new } = node_change;
+//             println!("old: {:?}", old.id());
+//             println!("new: {:?}", new.id());
+//         });
+//         assert_eq!(updates.get_hunks(), vec!["warld"]);
+//     }
+// }
