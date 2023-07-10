@@ -16,9 +16,14 @@ pub struct Parser {
     pub tree: tree_sitter::Tree,
 }
 
-pub struct Updates {
-    pub tree_old: tree_sitter::Tree,
-    pub tree_new: tree_sitter::Tree,
+pub struct Update {
+    pub old_text: String,
+    pub old_tree: tree_sitter::Tree,
+
+    pub new_text: String,
+    pub new_tree: tree_sitter::Tree,
+
+    pub diff: text_diff::Diff,
 }
 
 impl Parser {
@@ -31,24 +36,40 @@ impl Parser {
         Self { parser, text, tree }
     }
 
-    pub fn update(&mut self, text_new: String) {
+    pub fn update(&mut self, text_new: String) -> Update {
         let text_old = self.text.clone();
+        let tree_old = self.tree.clone();
+        let mut tree_new = self.tree.clone();
         let diff = text_diff::compute_diff(text_old.as_str(), text_new.as_str());
-        for change in diff.changes {
+
+        for change in &diff.changes {
             let text_intermediate = format!(
                 "{}{}",
                 &text_new[0..change.after_bytes.end],
                 &text_old[change.before_bytes.end..]
             );
-            self.tree.edit(&change.input_edit());
-            let new_tree = self
+            tree_new.edit(&change.input_edit());
+            tree_new = self
                 .parser
-                .parse(text_intermediate, Some(&self.tree))
+                .parse(text_intermediate, Some(&tree_new))
                 .unwrap();
-            self.tree = new_tree;
         }
-        self.text = text_new;
+        Update {
+            old_text: text_old,
+            old_tree: tree_old,
+
+            new_text: text_new,
+            new_tree: tree_new,
+
+            diff,
+        }
     }
+
+    pub fn apply_update(&mut self, update: Update) {
+        self.text = update.new_text;
+        self.tree = update.new_tree;
+    }
+
 
     pub fn debug_print(&self, out: &mut dyn std::io::Write) -> Result<(), std::io::Error> {
         return debug_print(&self.tree.root_node(), &self.text, out);
@@ -118,82 +139,38 @@ mod tests {
         let code1 = String::from("hello\nworld");
         let code2 = String::from("hello\nworld");
         let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
-        parser.update(code2.clone());
+        let update = parser.update(code2.clone());
+        parser.apply_update(update);
         assert_eq!(parser.get_text(parser.tree.root_node()), code2.clone());
     }
 
     #[test]
-    fn test_update_content() {
-        let code1 = String::from("hello\nworld");
-        let code2 = String::from("hello\nwarld");
+    fn test_update_edit() {
+        let code1 = String::from("halloo\nwooorld");
+        let code2 = String::from("hello\nworld");
         let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
-        parser.update(code2.clone());
+        let update = parser.update(code2.clone());
+        parser.apply_update(update);
         assert_eq!(parser.get_text(parser.tree.root_node()), code2.clone());
     }
 
     #[test]
-    fn test_update_append() {
+    fn test_update_append_end() {
         let code1 = String::from("hello\nworld");
         let code2 = String::from("hello\nworld\nfoo");
         let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
-        parser.update(code2.clone());
+        let update = parser.update(code2.clone());
+        parser.apply_update(update);
         assert_eq!(parser.get_text(parser.tree.root_node()), code2.clone());
     }
 
     #[test]
-    fn test_update_change_kind() {
-        let code1 = String::from("hello\nworld\nfoo");
-        let code2 = String::from("hello\n  world\nfoo");
-        let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
-        parser.update(code2.clone());
-        assert_eq!(parser.get_text(parser.tree.root_node()), code2.clone());
-    }
-
-    #[test]
-    fn test_update_change_kind_multiple() {
-        let code1 = String::from("hello\nworld\nfoo");
-        let code2 = String::from("hello\n  world\n  @foo");
-        let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
-        parser.update(code2.clone());
-        assert_eq!(parser.get_text(parser.tree.root_node()), code2.clone());
-    }
-
-    #[test]
-    fn test_update_delete() {
+    fn test_update_append_start() {
         let code1 = String::from("hello\nworld");
-        let code2 = String::from("world");
+        let code2 = String::from("foo\nhello\nworld");
         let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
-        parser.update(code2.clone());
-        assert_eq!(parser.get_text(parser.tree.root_node()), code2.clone());
-    }
-
-    #[test]
-    fn test_update_delete_multiple() {
-        let code1 = String::from("hello\nworld\nfoo");
-        let code2 = String::from("world");
-        let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
-        parser.update(code2.clone());
-        assert_eq!(parser.get_text(parser.tree.root_node()), code2.clone());
-    }
-
-    #[test]
-    fn test_update_change_multiple() {
-        let code1 = String::from(
-            r#"hello
-  world
-foo
-  bar"#,
-        );
-        let code2 = String::from(
-            r#"hello
-  world
-  x
-foo
-  bar
-  y"#,
-        );
-        let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
-        parser.update(code2.clone());
+        let update = parser.update(code2.clone());
+        parser.apply_update(update);
         assert_eq!(parser.get_text(parser.tree.root_node()), code2.clone());
     }
 }

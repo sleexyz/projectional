@@ -176,7 +176,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_diff_simple_addition() {
+    fn test_text_diff_simple_addition() {
         let before = r#"h"#;
         let after = r#"he"#;
         let diff = compute_diff(before, after);
@@ -194,7 +194,7 @@ mod tests {
     }
 
     #[test]
-    fn test_diff_simple_addition_line() {
+    fn test_text_diff_simple_addition_line() {
         let before = r#"h"#;
         let after = r#"h
 e"#;
@@ -213,7 +213,7 @@ e"#;
     }
 
     #[test]
-    fn test_diff_addition() {
+    fn test_text_diff_addition() {
         let before = r#"hello"#;
         let after = r#"hello
 world"#;
@@ -232,7 +232,7 @@ world"#;
     }
 
     #[test]
-    fn test_diff_deletion() {
+    fn test_text_diff_deletion() {
         let before = r#"hello
 world"#;
         let after = r#"hello"#;
@@ -252,7 +252,7 @@ world"#;
     }
 
     #[test]
-    fn test_diff_reference() {
+    fn test_text_diff_reference() {
         let before = r#"fn foo() -> Bar {
     let mut foo = 2;
     foo *= 50;
