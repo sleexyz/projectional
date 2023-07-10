@@ -42,23 +42,43 @@ impl<'a> TokenSource for BytesWrapper<'a> {
 }
 
 impl Change {
-    fn get_hunk<'a>(&'a self, code_before: &'a str, code_after: &'a str) -> (&'a str, &'a str) {
+    fn _get_hunk<'a>(&'a self, code_before: &'a str, code_after: &'a str) -> (&'a str, &'a str) {
         (
             &code_before[self.before_bytes.clone()],
             &code_after[self.after_bytes.clone()],
         )
     }
+
+    pub fn input_edit(&self) -> tree_sitter::InputEdit {
+        let start_byte = self.after_bytes.start as usize;
+        let old_end_byte =
+            (self.after_bytes.start + self.before_bytes.end - self.before_bytes.start) as usize;
+        let new_end_byte = self.after_bytes.end as usize;
+
+        let start_position = self.start_position;
+        let old_end_position = self.old_end_position;
+        let new_end_position = self.new_end_position;
+
+        tree_sitter::InputEdit {
+            start_byte,
+            old_end_byte,
+            new_end_byte,
+            start_position,
+            old_end_position,
+            new_end_position,
+        }
+    }
 }
 
 impl Diff {
-    fn get_hunks<'a>(
+    fn _get_hunks<'a>(
         &'a self,
         code_before: &'a str,
         code_after: &'a str,
     ) -> Vec<(&'a str, &'a str)> {
         self.changes
             .iter()
-            .map(|change| change.get_hunk(code_before, code_after))
+            .map(|change| change._get_hunk(code_before, code_after))
             .collect()
     }
 }
@@ -123,8 +143,10 @@ pub fn compute_diff(before: &str, after: &str) -> Diff {
 
         let old_row_diff =
             before_token_points[before_bytes.end].row - before_token_points[before_bytes.start].row;
+
         let old_col_diff = before_token_points[before_bytes.end].column
             - before_token_points[before_bytes.end].column;
+
         let old_end_position = tree_sitter::Point {
             row: start_position.row + old_row_diff,
             column: if old_row_diff > 0 {
@@ -133,6 +155,7 @@ pub fn compute_diff(before: &str, after: &str) -> Diff {
                 start_position.column + old_col_diff
             },
         };
+
         let new_end_position = after_token_points[after_bytes.end];
 
         changes.push(Change {
@@ -153,7 +176,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_diff_simple_addition() {
+    fn test_text_diff_simple_addition() {
         let before = r#"h"#;
         let after = r#"he"#;
         let diff = compute_diff(before, after);
@@ -167,11 +190,11 @@ mod tests {
                 new_end_position: tree_sitter::Point { row: 0, column: 2 },
             },]
         );
-        assert_eq!(&diff.get_hunks(before, after), &vec![("", "e")]);
+        assert_eq!(&diff._get_hunks(before, after), &vec![("", "e")]);
     }
 
     #[test]
-    fn test_diff_simple_addition_line() {
+    fn test_text_diff_simple_addition_line() {
         let before = r#"h"#;
         let after = r#"h
 e"#;
@@ -186,11 +209,11 @@ e"#;
                 new_end_position: tree_sitter::Point { row: 1, column: 1 },
             },]
         );
-        assert_eq!(&diff.get_hunks(before, after), &vec![("", "\ne")]);
+        assert_eq!(&diff._get_hunks(before, after), &vec![("", "\ne")]);
     }
 
     #[test]
-    fn test_diff_addition() {
+    fn test_text_diff_addition() {
         let before = r#"hello"#;
         let after = r#"hello
 world"#;
@@ -205,11 +228,11 @@ world"#;
                 new_end_position: tree_sitter::Point { row: 1, column: 5 },
             },]
         );
-        assert_eq!(&diff.get_hunks(before, after), &vec![("", "\nworld")]);
+        assert_eq!(&diff._get_hunks(before, after), &vec![("", "\nworld")]);
     }
 
     #[test]
-    fn test_diff_deletion() {
+    fn test_text_diff_deletion() {
         let before = r#"hello
 world"#;
         let after = r#"hello"#;
@@ -225,11 +248,11 @@ world"#;
                 new_end_position: tree_sitter::Point { row: 0, column: 5 },
             },]
         );
-        assert_eq!(&diff.get_hunks(before, after), &vec![("\nworld", "")]);
+        assert_eq!(&diff._get_hunks(before, after), &vec![("\nworld", "")]);
     }
 
     #[test]
-    fn test_diff() {
+    fn test_text_diff_reference() {
         let before = r#"fn foo() -> Bar {
     let mut foo = 2;
     foo *= 50;
@@ -275,7 +298,7 @@ fn foo() -> Bar {
             ]
         );
         assert_eq!(
-            &diff.get_hunks(before, after),
+            &diff._get_hunks(before, after),
             &vec![
                 ("", "// lorem ipsum\n"),
                 ("", ";\n    println!(\"{foo}\");"),

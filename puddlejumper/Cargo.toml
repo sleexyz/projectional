@@ -11,6 +11,7 @@ tree-sitter-puddlejumper = { version = "0.0.1", path = "../tree-sitter-puddlejum
 tree-sitter = { version = ">= 0.19, < 0.21", optional = true }
 tree-sitter-c2rust = { version = ">= 0.19, < 0.21", optional = true }
 imara-diff = "0.1.5"
+indexmap = "2.0.0"
 
 [lib]
 name = "puddlejumper"
