@@ -5,13 +5,24 @@ pub struct PrintContext<'out> {
     pub out: &'out mut dyn std::io::Write,
     pub needs_indent: bool,
 }
-impl Context {
+
+impl <'out> PrintContext<'out> {
+    pub fn new(out: &'out mut dyn std::io::Write) -> Self {
+        Self {
+            level: 0,
+            out,
+            needs_indent: false,
+        }
+    }
+}
+
+impl PrintContext<'_> {
     pub fn pretty_print<'a>(
-        &'a self,
+        &mut self,
         node: NodeId,
-        ctx: &mut PrintContext,
+        ctx: &'a Context,
     ) -> Result<(), std::io::Error> {
-        match &self.arena[node] {
+        match &ctx.arena[node] {
             Node::Document { children, .. } => {
                 for child in children {
                     self.pretty_print(*child, ctx)?;
@@ -24,34 +35,34 @@ impl Context {
                 ..
             } => {
                 let mut indent = String::new();
-                for _ in 0..ctx.level {
+                for _ in 0..self.level {
                     indent.push_str("    ");
                 }
-                write!(ctx.out, "{}", indent)?;
+                write!(self.out, "{}", indent)?;
                 match binding {
                     Some(binding) => {
-                        write!(ctx.out, "@{}:", binding)?;
+                        write!(self.out, "@{}:", binding)?;
                     }
                     None => (),
                 }
                 match content {
                     Some(Content::Content(content)) => {
-                        writeln!(ctx.out, "{}", content)?;
+                        writeln!(self.out, "{}", content)?;
                     }
                     Some(Content::Ref(content)) => {
-                        writeln!(ctx.out, "{}", content)?;
+                        writeln!(self.out, "{}", content)?;
                     }
                     None => (),
                 }
-                for child in children {
-                    self.pretty_print(
-                        *child,
-                        &mut PrintContext {
-                            level: ctx.level + 1,
-                            out: ctx.out,
-                            needs_indent: true,
-                        },
-                    )?;
+                {
+                    let mut pc = PrintContext {
+                        level: self.level + 1,
+                        out: self.out,
+                        needs_indent: true,
+                    };
+                    for child in children {
+                        pc.pretty_print( *child, ctx)?;
+                    }
                 }
             }
             Node::Block {
@@ -61,37 +72,43 @@ impl Context {
                 ..
             } => {
                 let mut indent = String::new();
-                for _ in 0..ctx.level {
+                for _ in 0..self.level {
                     indent.push_str("  ");
                 }
                 match binding {
                     Some(binding) => {
-                        writeln!(ctx.out, "{}{}:", indent, binding)?;
+                        writeln!(self.out, "{}{}:", indent, binding)?;
                     }
                     None => (),
                 }
-                self.pretty_print(
-                    *header,
-                    &mut PrintContext {
-                        level: ctx.level,
-                        out: ctx.out,
+                {
+                    let mut pc = PrintContext {
+                        level: self.level,
+                        out: self.out,
                         needs_indent: false,
-                    },
-                )?;
-                for child in children {
-                    self.pretty_print(
-                        *child,
-                        &mut PrintContext {
-                            level: ctx.level + 1,
-                            out: ctx.out,
-                            needs_indent: true,
-                        },
-                    )?;
+                    };
+                    pc.needs_indent = false;
+                    pc.pretty_print(*header, ctx)?;
+                }
+                {
+                    let mut pc = PrintContext {
+                        level: self.level + 1,
+                        out: self.out,
+                        needs_indent: true,
+                    };
+                    for child in children {
+                        pc.pretty_print( *child, ctx)?;
+                    }
                 }
             }
         }
         Ok(())
     }
 
-
+    pub fn fmt(node: NodeId, context: &Context) -> String {
+        let mut out = Vec::new();
+        let mut pc = PrintContext::new(&mut out);
+        pc.pretty_print(node, context).unwrap();
+        String::from_utf8(out).unwrap()
+    }
 }

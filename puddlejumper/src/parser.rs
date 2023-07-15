@@ -39,6 +39,7 @@ impl Parser {
     pub fn update(&mut self, text_new: String) -> Update {
         let text_old = self.text.clone();
         let tree_old = self.tree.clone();
+
         let mut tree_new = self.tree.clone();
         let diff = text_diff::compute_diff(text_old.as_str(), text_new.as_str());
 
@@ -65,9 +66,10 @@ impl Parser {
         }
     }
 
-    pub fn apply_update(&mut self, update: Update) {
-        self.text = update.new_text;
-        self.tree = update.new_tree;
+    // NOTE: the top level node's id will change after the tree is cloned.
+    pub fn apply_update(&mut self, update: &Update) {
+        self.text = update.new_text.clone();
+        self.tree = update.new_tree.clone();
     }
 
 
@@ -95,7 +97,7 @@ fn debug_print(
         write_indent(out, indent_level)?;
         write!(
             out,
-            "{} [{}..{}] [({}, {}) - ({}, {})]       {}\n",
+            "{} [{}..{}] [({}, {}) - ({}, {})]  ({})       {}\n",
             n.kind(),
             n.start_byte(),
             n.end_byte(),
@@ -103,6 +105,7 @@ fn debug_print(
             n.start_position().column,
             n.end_position().row,
             n.end_position().column,
+            n.id(),
             serde_json::to_string(content).unwrap()
         )?;
 
@@ -140,7 +143,7 @@ mod tests {
         let code2 = String::from("hello\nworld");
         let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
         let update = parser.update(code2.clone());
-        parser.apply_update(update);
+        parser.apply_update(&update);
         assert_eq!(parser.get_text(parser.tree.root_node()), code2.clone());
     }
 
@@ -150,7 +153,7 @@ mod tests {
         let code2 = String::from("hello\nworld");
         let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
         let update = parser.update(code2.clone());
-        parser.apply_update(update);
+        parser.apply_update(&update);
         assert_eq!(parser.get_text(parser.tree.root_node()), code2.clone());
     }
 
@@ -160,7 +163,7 @@ mod tests {
         let code2 = String::from("hello\nworld\nfoo");
         let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
         let update = parser.update(code2.clone());
-        parser.apply_update(update);
+        parser.apply_update(&update);
         assert_eq!(parser.get_text(parser.tree.root_node()), code2.clone());
     }
 
@@ -170,7 +173,7 @@ mod tests {
         let code2 = String::from("foo\nhello\nworld");
         let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
         let update = parser.update(code2.clone());
-        parser.apply_update(update);
+        parser.apply_update(&update);
         assert_eq!(parser.get_text(parser.tree.root_node()), code2.clone());
     }
 }

@@ -16,11 +16,6 @@ use super::parser::*;
 use tree_sitter::Node;
 use tree_sitter::Tree;
 
-// pub struct TreeDiff {
-//     pub old_tree: Tree,
-//     pub new_tree: Tree,
-// }
-
 #[derive(Debug, PartialEq, Clone, Eq)]
 pub enum OpF<T> {
     // Content is identical.
@@ -78,14 +73,30 @@ impl<'a> OpF<Node<'a>> {
             ),
             OpF::DeleteSubtree { old } => context.old_data[old].base_cost_subtree * 4,
             OpF::InsertSubtree { new, .. } => context.new_data[new].base_cost_subtree * 2,
-            // OpF::DeleteSubtree { old } =>     2,
-            // OpF::InsertSubtree { new, .. } => 2,
-            // OpF::Delete { old } if old.kind() == "children" => 0,
-            // OpF::Update { new, .. } if new.kind() == "children" => 0,
-            // OpF::Insert { new } if new.kind() == "children" => 0,
             OpF::Update { .. } => 0,
             OpF::Delete { old } => base_cost(old) * 4,
             OpF::Insert { new } => base_cost(new) * 2,
+        }
+    }
+
+    pub fn reconciliation(&self) -> Option<(usize, usize)> {
+        match &self {
+            OpF::Exact { old, new } => Some((old.id(), new.id())),
+            OpF::Update{ old, new } => Some((old.id(), new.id())),
+            OpF::UpdateScalar{ old, new } => Some((old.id(), new.id())),
+            _ => None,
+        }
+    }
+
+    pub fn source_node_id(&self) -> usize {
+        match &self {
+            OpF::Exact { old, .. } => old.id(),
+            OpF::Update { old, .. } => old.id(),
+            OpF::UpdateScalar { old, .. } => old.id(),
+            OpF::Delete { old } => old.parent().unwrap().id(),
+            OpF::DeleteSubtree { old } => old.parent().unwrap().id(),
+            OpF::Insert { new } => new.parent().unwrap().id(),
+            OpF::InsertSubtree { new } => new.parent().unwrap().id(),
         }
     }
 
@@ -133,7 +144,7 @@ impl<'a> OpF<Node<'a>> {
     }
 }
 
-type Op<'a> = OpF<Node<'a>>;
+pub type Op<'a> = OpF<Node<'a>>;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct NodeData {
@@ -201,7 +212,9 @@ impl<'a> Cursor<Node<'a>> {
 }
 
 pub struct UpdateContext<'a> {
+    // TODO: deprecate
     pub update: &'a Update,
+    pub old_tree: &'a Tree,
     pub old_data: HashMap<Node<'a>, NodeData>,
     pub new_data: HashMap<Node<'a>, NodeData>,
     pub debug_info: HashMap<OpPtr<'a>, &'static str>,
@@ -302,11 +315,12 @@ pub struct SearchCache<'a> {
 }
 
 impl<'a> UpdateContext<'a> {
-    pub fn new(update: &'a Update) -> Self {
-        let old_data = get_content_hashes(&update.old_tree, &update.old_text);
+    pub fn new(update: &'a Update, old_tree: &'a Tree) -> Self {
+        let old_data = get_content_hashes(old_tree, &update.old_text);
         let new_data = get_content_hashes(&update.new_tree, &update.new_text);
         let mut context = UpdateContext {
             update: &update,
+            old_tree,
             old_data,
             new_data,
             search_cache: SearchCache {
@@ -315,36 +329,56 @@ impl<'a> UpdateContext<'a> {
             },
             debug_info: HashMap::new(),
         };
-        context.find_change();
+        context.compute_diff();
         context
     }
 
-    pub fn get_root_change_path_debug(&self) -> Vec<OpF<&str>> {
-        self.get_root_change_path()
+    pub fn get_root_diff_debug(&self) -> Vec<OpF<&str>> {
+        self.get_root_diff()
             .unwrap()
             .iter()
             .map(|c| c.to_hunks(&self))
             .collect::<Vec<_>>()
     }
 
-    pub fn get_root_change_path_debug_verbose(
+    pub fn get_root_diff_debug_verbose(
         &self,
     ) -> Vec<(OpF<(&str, &str)>, &'static str, *const Op)> {
-        self.get_root_change_path()
+        self.get_root_diff()
             .unwrap()
             .iter()
             .map(|c| (c.to_hunks_with_kind(&self), self.debug_info[c], c.raw_ptr()))
             .collect::<Vec<_>>()
     }
 
-    pub fn get_root_change_path(&self) -> Option<&Vec<OpPtr<'a>>> {
+    pub fn get_root_diff(&self) -> Option<&Vec<OpPtr<'a>>> {
         self.search_cache
             .map
             .get(&(
-                Cursor::After(self.update.old_tree.root_node()),
+                Cursor::After(self.old_tree.root_node()),
                 Cursor::After(self.update.new_tree.root_node()),
             ))
             .map(|data| &data.path)
+    }
+
+    /* Returns a map from target node (new) to source node (old) */
+    pub fn get_root_diff_reconciliations_by_target_node(&self) -> Option<HashMap<usize, OpPtr<'a>>> {
+        let mut result = HashMap::new();
+        for op in self.get_root_diff()? {
+            if let Some((_, new)) = op.reconciliation() {
+                result.insert(new, op.clone());
+            }
+        }
+        Some(result)
+    }
+
+    pub fn get_root_diff_by_source_node(&self) -> Option<HashMap<usize, Vec<OpPtr<'a>>>> {
+        let mut result = HashMap::new();
+        for op in self.get_root_diff()? {
+            let ts_node_id = op.source_node_id();
+            result.entry(ts_node_id).or_insert_with(Vec::new).push(op.clone());
+        }
+        Some(result)
     }
 
     pub fn make_op(&mut self, op: OpF<Node<'a>>, reason: &'static str) -> OpPtr<'a> {
@@ -353,8 +387,8 @@ impl<'a> UpdateContext<'a> {
         op_ptr
     }
 
-    pub fn find_change(&mut self) {
-        let old_root = self.update.old_tree.root_node();
+    pub fn compute_diff(&mut self) {
+        let old_root = self.old_tree.root_node();
         let new_root = self.update.new_tree.root_node();
         let data = SearchData {
             old: Cursor::Before(old_root),
@@ -739,9 +773,9 @@ mod tests {
         let code2 = String::from("hello\nworld");
         let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
         let update = parser.update(code2.clone());
-        let update_context = UpdateContext::new(&update);
+        let update_context = UpdateContext::new(&update, &parser.tree);
         assert_eq!(
-            update_context.get_root_change_path_debug(),
+            update_context.get_root_diff_debug(),
             vec![OpF::Exact {
                 old: "hello\nworld",
                 new: "hello\nworld",
@@ -755,10 +789,10 @@ mod tests {
         let code2 = String::from("hello\nwarld");
         let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
         let update = parser.update(code2.clone());
-        let update_context = UpdateContext::new(&update);
-        println!("{:#?}", update_context.get_root_change_path_debug_verbose());
+        let update_context = UpdateContext::new(&update, &parser.tree);
+        println!("{:#?}", update_context.get_root_diff_debug_verbose());
         assert_eq!(
-            update_context.get_root_change_path_debug(),
+            update_context.get_root_diff_debug(),
             vec![
                 OpF::Update {
                     old: "hello\nworld",
@@ -786,10 +820,10 @@ mod tests {
         let code2 = String::from("hello\nworld\nfoo");
         let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
         let update = parser.update(code2.clone());
-        let update_context = UpdateContext::new(&update);
-        println!("{:#?}", update_context.get_root_change_path_debug_verbose());
+        let update_context = UpdateContext::new(&update, &parser.tree);
+        println!("{:#?}", update_context.get_root_diff_debug_verbose());
         assert_eq!(
-            update_context.get_root_change_path_debug(),
+            update_context.get_root_diff_debug(),
             vec![
                 OpF::Update {
                     old: "hello\nworld",
@@ -814,9 +848,9 @@ mod tests {
         let code2 = String::from("world");
         let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
         let update = parser.update(code2.clone());
-        let update_context = UpdateContext::new(&update);
+        let update_context = UpdateContext::new(&update, &parser.tree);
         assert_eq!(
-            update_context.get_root_change_path_debug(),
+            update_context.get_root_diff_debug(),
             vec![
                 OpF::Update {
                     old: "hello\nworld",
@@ -837,10 +871,10 @@ mod tests {
         let code2 = String::from("hello");
         let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
         let update = parser.update(code2.clone());
-        let update_context = UpdateContext::new(&update);
-        println!("{:#?}", update_context.get_root_change_path_debug_verbose());
+        let update_context = UpdateContext::new(&update, &parser.tree);
+        println!("{:#?}", update_context.get_root_diff_debug_verbose());
         assert_eq!(
-            update_context.get_root_change_path_debug(),
+            update_context.get_root_diff_debug(),
             vec![
                 OpF::Update {
                     old: "hello\nworld",
@@ -861,10 +895,10 @@ mod tests {
         let code2 = String::from("world");
         let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
         let update = parser.update(code2.clone());
-        let update_context = UpdateContext::new(&update);
-        println!("{:#?}", update_context.get_root_change_path_debug_verbose());
+        let update_context = UpdateContext::new(&update, &parser.tree);
+        println!("{:#?}", update_context.get_root_diff_debug_verbose());
         assert_eq!(
-            update_context.get_root_change_path_debug(),
+            update_context.get_root_diff_debug(),
             vec![
                 OpF::Update {
                     old: "hello\nworld\nfoo",
@@ -886,10 +920,10 @@ mod tests {
         let code2 = String::from("hello\n  world");
         let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
         let update = parser.update(code2.clone());
-        let update_context = UpdateContext::new(&update);
-        println!("{:#?}", update_context.get_root_change_path_debug_verbose());
+        let update_context = UpdateContext::new(&update, &parser.tree);
+        println!("{:#?}", update_context.get_root_diff_debug_verbose());
         assert_eq!(
-            update_context.get_root_change_path_debug(),
+            update_context.get_root_diff_debug(),
             vec![
                 OpF::Update {
                     old: "hello\nworld",
@@ -918,9 +952,9 @@ mod tests {
         let code2 = String::from("hello\n  world\n  @foo");
         let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
         let update = parser.update(code2.clone());
-        let update_context = UpdateContext::new(&update);
+        let update_context = UpdateContext::new(&update, &parser.tree);
         assert_eq!(
-            update_context.get_root_change_path_debug(),
+            update_context.get_root_diff_debug(),
             vec![
                 OpF::Update {
                     old: "hello\nworld\nfoo",
@@ -960,10 +994,10 @@ mod tests {
         );
         let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
         let update = parser.update(code2.clone());
-        let update_context = UpdateContext::new(&update);
-        println!("{:#?}", update_context.get_root_change_path_debug_verbose());
+        let update_context = UpdateContext::new(&update, &parser.tree);
+        println!("{:#?}", update_context.get_root_diff_debug_verbose());
         assert_eq!(
-            update_context.get_root_change_path_debug(),
+            update_context.get_root_diff_debug(),
             vec![
                 OpF::Update {
                     old: "hello\n    world",
@@ -1005,10 +1039,10 @@ foo"#,
         );
         let mut parser = Parser::new(code1.clone(), tree_sitter_puddlejumper::language());
         let update = parser.update(code2.clone());
-        let update_context = UpdateContext::new(&update);
+        let update_context = UpdateContext::new(&update, &parser.tree);
         // println!("{:#?}", update_context.get_root_change_path_debug_verbose());
         assert_eq!(
-            update_context.get_root_change_path_debug(),
+            update_context.get_root_diff_debug(),
             vec![
                 OpF::Update {
                     old: "hello\n    world\nfoo",

@@ -47,7 +47,7 @@ fn main() {
         }
         "parse" => {
             let mut ctx = puddlejumper::node::Context::new();
-            let result = ctx.load_document(&p);
+            let result = ctx.load_document(&p.tree, &p.text);
             match result {
                 Some(_node) => {
                     for (id, node) in ctx.arena.iter() {
@@ -67,18 +67,15 @@ fn main() {
         "print_prioritized" => {
             let mut ctx = puddlejumper::node::Context::new();
             let result = ctx
-                .load_document(&p)
+                .load_document(&p.tree, &p.text)
                 .ok_or(Error::new(ErrorKind::Other, "Error parsing file"))
                 .and_then(|node| {
                     let list = ctx.make_prioritized_list(node);
-                    return ctx.pretty_print(
-                        list,
-                        &mut puddlejumper::node::printer::PrintContext {
-                            level: 0,
-                            needs_indent: true,
-                            out: &mut std::io::stdout(),
-                        },
-                    );
+                    return puddlejumper::node::printer::PrintContext {
+                        level: 0,
+                        needs_indent: true,
+                        out: &mut std::io::stdout(),
+                    }.pretty_print(list, &ctx);
                 });
             match result {
                 Ok(_) => (),
